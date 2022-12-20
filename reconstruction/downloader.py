@@ -7,7 +7,7 @@ import multiprocessing
 
 server = ECMWFDataServer()
 
-path = '/mnt/disco2/data/NWP/era20c/'
+path = '/home/alvaro/data/NWP/era20c/'
 
 pressure_level_variables = {
     '129': '925',
@@ -25,16 +25,16 @@ dates = pd.date_range(start=datetime.datetime(1900, 1, 1), end=datetime.datetime
 def get_era20c(inputs):
 
     variable = inputs[0]
-    year = inputs[1]
-    leveltype = inputs[2]
+    #year = inputs[1]
+    leveltype = inputs[1]
 
-    file_path = path + 'y_' + str(year) + '/'
+    file_path = path
 
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
-    filename = (str(year).zfill(4) + '_'
-                + str(pressure_level_variables[variable]) + '_'
+    filename = (
+                str(pressure_level_variables[variable]) + '_'
                 + str(variable))
 
     if not os.path.isfile(str(file_path) + str(filename) + '.grib'):
@@ -45,7 +45,7 @@ def get_era20c(inputs):
                 'levtype': 'pl',
                 'levelist': pressure_level_variables[variable],
                 'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                'date': str(year) + '0101/to/' + str(year) +'1230',
+                'date': '19000101/to/20101230',
                 'step': "0",
                 'type': "an",
                 'area': "80/-60/20/20",
@@ -60,7 +60,7 @@ def get_era20c(inputs):
                 'stream': "oper",
                 'levtype': 'sl',
                 'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                'date': str(year) + '0101/to/' + str(year) +'1230',
+                'date': '19000101/to/20101230',
                 'step': "0",
                 'type': "an",
                 'area': "80/-60/20/20",

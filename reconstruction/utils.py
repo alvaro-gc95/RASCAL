@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 
-def get_reanalysis_data(model, variable, dates, hours, mean_type=None):
+def get_reanalysis_data(nwp_path, variable, dates, hours, mean_type=None):
     """
     Open a set of daily grib files.
     :param project: str. Project of the grib files.
@@ -19,9 +19,6 @@ def get_reanalysis_data(model, variable, dates, hours, mean_type=None):
     :return data: array. All the daily data in a singular array.
     :return available_dates: list. List of dates with available data
     """
-
-    # Numerical model data path
-    nwp_path = '../data/NWP/' + model + '/'
 
     # List of al the grib files
     all_file_paths = [np.nan] * len(dates)
@@ -37,11 +34,6 @@ def get_reanalysis_data(model, variable, dates, hours, mean_type=None):
         # grib file of the geopotential in the selected 'anomaly date'
         file_data = (str(nwp_path)
                      + 'y_' + str(year) + '/'
-                     + 'm_' + str(month).zfill(2) + '/'
-                     + 'd_' + str(day).zfill(2) + '/'
-                     + str(year) + '_'
-                     + str(month).zfill(2) + '_'
-                     + str(day).zfill(2) + '_'
                      + str(variable) + '.grib')
 
         # If the file exists,put the path in the list and save the correspondent date and hours
@@ -57,9 +49,10 @@ def get_reanalysis_data(model, variable, dates, hours, mean_type=None):
             print(file_data + ' does not exist')
 
     all_file_paths = [item for item in all_file_paths if not (pd.isnull(item)) == True]
-    print(all_file_paths)
+    print(len(all_file_paths))
     # Open the files
     data = open_grib(all_file_paths, hours=hours, mean_type=mean_type)
+
     if mean_type is None:
         data = np.reshape(data, (data.shape[0] * data[1], data.shape[2], data.shape[3]))
 
@@ -98,8 +91,9 @@ def open_grib(grib_paths, hours, **kwargs):
 
         else:
 
-            ds = xr.open_dataset(grib_path, engine="pynio")
-            print(ds)
+            ds = xr.load_dataset(grib_path, engine="cfgrib")
+
+
             """
             # Open grib file
             dataset = pygrib.open(grib_path)

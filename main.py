@@ -15,12 +15,17 @@ pressure_level_variables = {
 
 single_level_variables = ['167', '168']
 
-dates = pd.date_range(start=datetime.datetime(1900, 1, 1), end=datetime.datetime(2010, 12, 30))
+#dates = pd.date_range(start=datetime.datetime(1900, 1, 1), end=datetime.datetime(2010, 12, 30))
+
+dates = [str(y) for y in range(1900, 2011)]
 
 pl_inputs = list(itertools.product(pressure_level_variables.keys(), dates, ['pl']))
 sl_inputs = list(itertools.product(single_level_variables, dates, ['sl']))
 
 inputs = pl_inputs + sl_inputs
+
+nwp_path = '/mnt/disco2/data/NWP/era20c/'
+
 
 if __name__ == '__main__':
 
@@ -29,7 +34,7 @@ if __name__ == '__main__':
     pool.close()
     pool.join()
     """
-    geopotential, dates = ut.get_reanalysis_data('era20c', '925_129', dates=dates, hours=np.arange(0, 24, 3))
+    geopotential, dates = ut.get_reanalysis_data(nwp_path, '925_129', dates=dates, hours=np.arange(0, 24, 3))
     print(geopotential.shape)
     print(len(dates))
     """

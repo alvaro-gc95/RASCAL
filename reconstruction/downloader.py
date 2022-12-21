@@ -7,7 +7,7 @@ import multiprocessing
 
 server = ECMWFDataServer()
 
-path = '/home/alvaro/data/NWP/era20c/'
+path = '/mnt/disco2/data/NWP/era20c/'
 
 pressure_level_variables = {
     '129': '925',
@@ -23,29 +23,33 @@ dates = pd.date_range(start=datetime.datetime(1900, 1, 1), end=datetime.datetime
 
 
 def get_era20c(inputs):
-
+    print(inputs)
     variable = inputs[0]
-    #year = inputs[1]
-    leveltype = inputs[1]
+    year = inputs[1]
+    leveltype = inputs[2]
 
-    file_path = path
+    file_path = path + '/y_' + str(year) + '/'
 
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
-    filename = (
-                str(pressure_level_variables[variable]) + '_'
-                + str(variable))
+    if leveltype == 'pl':
+        filename = ('y_' + str(year) + '_' + str(pressure_level_variables[variable]) + '_' + variable)
+    elif leveltype == 'sl':
+        filename = ('y_' + str(year) + '_SURF_' + variable)
+    else:
+        raise AttributeError(leveltype + ' is not a level type')
 
     if not os.path.isfile(str(file_path) + str(filename) + '.grib'):
         if leveltype == 'pl':
+
             server.retrieve({
                 'dataset': "era20c",
                 'stream': "oper",
                 'levtype': 'pl',
                 'levelist': pressure_level_variables[variable],
                 'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                'date': '19000101/to/20101230',
+                'date': str(year) + '0101/to/' + str(year) + '1230',
                 'step': "0",
                 'type': "an",
                 'area': "80/-60/20/20",
@@ -60,7 +64,7 @@ def get_era20c(inputs):
                 'stream': "oper",
                 'levtype': 'sl',
                 'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                'date': '19000101/to/20101230',
+                'date': str(year) + '0101/to/' + str(year) + '1230',
                 'step': "0",
                 'type': "an",
                 'area': "80/-60/20/20",

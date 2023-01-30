@@ -1,16 +1,19 @@
-import numpy as np
-import os
-import tqdm
 import datetime
-import pickle
-import pandas as pd
-import xarray as xr
-import re
 import itertools
+import os
+import pickle
+import re
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import tqdm
+import xarray as xr
+import yaml
+
 import autoval.climate
 import autoval.utils
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 era_variable_names = {
     'TMPA': 't2m',
@@ -42,6 +45,27 @@ class ReanalysisSeries:
 def save_object(obj, filename):
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+
+def open_yaml(yaml_path):
+    """
+    Read the configuration yaml file.
+    :param yaml_path: str. Path of the yaml file
+    :return configuration file: Object. Object containing the information of the configuration file.
+    """
+
+    # Check if the yaml exists
+    if not os.path.exists(yaml_path):
+        raise AttributeError('WARNING: The configuration file ' + yaml_path + ' does not exist')
+
+    # Read data in ini
+    with open(yaml_path, 'r') as stream:
+        try:
+            configuration_file = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    return configuration_file
 
 
 def get_validation_window(test_date, dates, window_size, window_type='centered'):

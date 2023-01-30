@@ -1,129 +1,137 @@
-from ecmwfapi import ECMWFDataServer
-import pandas as pd
-import datetime
+"""
+Download reanalysis data. For now this works with the ECMWF reanalysis, the ERA20C and ERA20CM products
+
+contact: alvaro@intermet.es
+"""
+
 import itertools
 import os
-import multiprocessing
+
+from ecmwfapi import ECMWFDataServer
+
+import reconstruction.utils
 
 server = ECMWFDataServer()
 
-path = '/home/alvaro/data/NWP/era20c/'
-
-pressure_level_variables = {
-    '129': '925',
-    '131': '850',
-    '132': '850',
-    '130': '850',
-    '157': '950'
-}
-single_level_variables = ["228", "165", "166", "246", "247", "167", "71.162", "72.162", "168"]
+config = reconstruction.utils.open_yaml('config.yaml')
 
 
-def get_downloader_inputs(initial_year, final_year):
+def separate_variables_level_type():
+    """
+    Divide the variables in a list of single level variables and a dictionary of pressure level variables
+    """
+
+    pressure_level_variables = {}
+    single_level_variables = []
+
+    for sublist in config.get('reanalysis_variable_levels'):
+        variable = sublist[0]
+        level = sublist[1]
+        if level == 'surf':
+            single_level_variables.append(variable)
+        else:
+            pressure_level_variables[variable] = level
+
+    return single_level_variables, pressure_level_variables
+
+
+def get_downloader_inputs():
     """
     Get a list of inputs for the reanalysis downloader
-    :param initial_year: int.
-    :param final_year: int.
     :return: inputs. List of variable codes, dates and level.
     """
 
+    initial_year = config.get('initial_year')
+    final_year = config.get('final_year')
+
+    single_level_variables, pressure_level_variables = separate_variables_level_type()
+
     years = [str(y) for y in range(initial_year, final_year + 1)]
 
-    pl_inputs = list(itertools.product(pressure_level_variables.keys(), years, ['pl']))
-    sl_inputs = list(itertools.product(single_level_variables, years, ['sfc']))
+    pressure_level_inputs = list(itertools.product(pressure_level_variables.keys(), years, ['pl']))
+    single_level_inputs = list(itertools.product(single_level_variables, years, ['sfc']))
 
-    inputs = pl_inputs + sl_inputs
+    inputs = pressure_level_inputs + single_level_inputs
 
     return inputs
 
 
 def get_era20c(inputs):
+    """
+    Download data from the ERA20C and ERA20CM reanalysis
+    :param inputs: list. [variable, year, leveltype]
+    """
 
     variable = inputs[0]
     year = inputs[1]
     leveltype = inputs[2]
 
-    file_path = path + '/y_' + str(year) + '/'
+    single_level_variables, pressure_level_variables = separate_variables_level_type()
 
+    # Prepare the export file name and directory
+    file_path = config.get('reanalysis_path') + '/y_' + str(year) + '/'
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-
     if leveltype == 'pl':
-        filename = (str(year) + '_' + str(pressure_level_variables[variable]) + '_' + variable)
+        filename = (str(year) + '_' + pressure_level_variables[variable] + '_' + variable)
     elif leveltype == 'sfc':
         filename = (str(year) + '_SURF_' + variable)
     else:
         raise AttributeError(leveltype + ' is not a level type')
 
+    # Model
+    if variable == '228':
+        parameters = {
+            'dataset': "era20cm",
+            'type': "fc",
+            'number': "0/1/2/3/4/5/6/7/8/9",
+            'stream': "enda",
+            'step': "3",
+            'class': "em",
+            "expver": "1"
+        }
+    else:
+        parameters = {
+            'dataset': "era20c",
+            'stream': "oper",
+            'step': "0",
+            'type': "an",
+        }
+
+    # File domain
+    max_lat = config.get('reanalysis_max_lat')
+    min_lat = config.get('reanalysis_min_lat')
+    max_lon = config.get('reanalysis_max_lon')
+    min_lon = config.get('reanalysis_min_lon')
+
+    area = map(str, [max_lat, min_lon, min_lat, max_lon])
+    area = '/'.join(area)
+    parameters["area"] = area
+
+    # File time
+    if variable == '167' or variable == '168':
+        time = "00:00:00/06:00:00/12:00:00/18:00:00"
+        parameters["class"] = "e2"
+        parameters["expver"] = "1"
+    else:
+        time = "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00"
+    parameters["time"] = time
+    parameters["date"] = str(year) + "-01-01/to/" + str(year) + "-12-31"
+
+    # File grid
+    parameters['grid'] = "0.75/0.75"
+
+    # File variable
+    parameters['param'] = variable
+    parameters['levtype'] = leveltype
+    if leveltype == 'pl':
+        parameters['levelist'] = pressure_level_variables[variable]
+
+    # Ouput path
+    parameters['target'] = file_path + filename + '.grib'
+
+    # Download file if it does not exist
     if not os.path.isfile(str(file_path) + str(filename) + '.grib'):
-        if leveltype == 'pl':
-
-            server.retrieve({
-                'dataset': "era20c",
-                'stream': "oper",
-                'levtype': 'pl',
-                'levelist': pressure_level_variables[variable],
-                'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                'date': str(year) + '0101/to/' + str(year) + '1231',
-                'step': "0",
-                'type': "an",
-                'area': "80/-60/20/20",
-                'grid': "0.75/0.75",
-                'param': variable,
-                'target': file_path + filename + '.grib'
-            })
-
-        elif leveltype == 'sfc':
-
-            if variable == '228':
-                server.retrieve({
-                    "class": "em",
-                    "dataset": "era20cm",
-                    "date": str(year) + "-01-01/to/" + str(year) + "-12-31",
-                    "expver": "1",
-                    "levtype": "sfc",
-                    "number": "0/1/2/3/4/5/6/7/8/9",
-                    "param": "228.128",
-                    "step": "3",
-                    "stream": "enda",
-                    "time": "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                    "type": "fc",
-                    'area': "80/-60/20/20",
-                    'grid': "0.75/0.75",
-                    "target": file_path + filename + '.grib',
-                })
-            elif variable == '167' or variable == '168':
-                server.retrieve({
-                    "class": "e2",
-                    "dataset": "era20c",
-                    "date": str(year) + "-01-01/to/" + str(year) + "-12-31",
-                    "expver": "1",
-                    "levtype": "sfc",
-                    "number": "0/1/2/3/4/5/6/7/8/9",
-                    "param": variable,
-                    "stream": "oper",
-                    "time": "00:00:00/06:00:00/12:00:00/18:00:00",
-                    "type": "an",
-                    'area': "80/-60/20/20",
-                    'grid': "0.75/0.75",
-                    "target": file_path + filename + '.grib',
-                })
-
-            else:
-                server.retrieve({
-                    'dataset': "era20c",
-                    "class": "e2",
-                    'stream': "oper",
-                    'levtype': "sfc",
-                    'time': "00:00:00/03:00:00/06:00:00/09:00:00/12:00:00/15:00:00/18:00:00/21:00:00",
-                    'date': str(year) + '0101/to/' + str(year) + '1231',
-                    'step': "0",
-                    'type': "an",
-                    'area': "80/-60/20/20",
-                    'grid': "0.75/0.75",
-                    'param': variable,
-                    'target': file_path + filename + '.grib'
-                })
-
+        server.retrieve({parameters})
     else:
         print(str(file_path) + str(filename) + '.grib already exists')

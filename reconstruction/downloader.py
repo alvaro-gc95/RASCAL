@@ -132,6 +132,6 @@ def get_era20c(inputs):
 
     # Download file if it does not exist
     if not os.path.isfile(str(file_path) + str(filename) + '.grib'):
-        server.retrieve({parameters})
+        server.retrieve(parameters)
     else:
         print(str(file_path) + str(filename) + '.grib already exists')

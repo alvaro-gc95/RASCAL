@@ -66,11 +66,7 @@ n_components = 4
 if __name__ == '__main__':
 
     # Request reanalysis data
-    inputs = dw.get_downloader_inputs()
-    pool = multiprocessing.Pool()
-    pool.map(dw.get_era20c, inputs)
-    pool.close()
-    pool.join()
+    dw.request_reanalysis(dataset='era20c', parallelize=True)
 
     for observed_variable in observed_variables:
 

@@ -6,6 +6,7 @@ contact: alvaro@intermet.es
 
 import itertools
 import os
+import multiprocessing
 
 from ecmwfapi import ECMWFDataServer
 
@@ -135,3 +136,19 @@ def get_era20c(inputs):
         server.retrieve(parameters)
     else:
         print(str(file_path) + str(filename) + '.grib already exists')
+
+
+def request_reanalysis(dataset, parallelize=False):
+
+    inputs = get_downloader_inputs()
+    if parallelize:
+        pool = multiprocessing.Pool()
+        if dataset == 'era20c':
+            pool.map(get_era20c, inputs)
+        pool.close()
+        pool.join()
+
+    else:
+        if dataset == 'era20c':
+            for i in inputs:
+                get_era20c(i)

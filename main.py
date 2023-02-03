@@ -66,11 +66,11 @@ n_components = 4
 if __name__ == '__main__':
 
     # Request reanalysis data
-    # inputs = dw.get_downloader_inputs(initial_year, final_year)
-    # pool = multiprocessing.Pool()
-    # pool.map(dw.get_era20c, inputs)
-    # pool.close()
-    # pool.join()
+    inputs = dw.get_downloader_inputs()
+    pool = multiprocessing.Pool()
+    pool.map(dw.get_era20c, inputs)
+    pool.close()
+    pool.join()
 
     for observed_variable in observed_variables:
 

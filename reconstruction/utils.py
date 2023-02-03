@@ -57,15 +57,15 @@ def open_yaml(yaml_path):
     # Check if the yaml exists
     if not os.path.exists(yaml_path):
         raise AttributeError('WARNING: The configuration file ' + yaml_path + ' does not exist')
+    else:
+        # Read data in ini
+        with open(yaml_path, 'r') as stream:
+            try:
+                configuration_file = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
 
-    # Read data in ini
-    with open(yaml_path, 'r') as stream:
-        try:
-            configuration_file = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-
-    return configuration_file
+        return configuration_file
 
 
 def get_validation_window(test_date, dates, window_size, window_type='centered'):

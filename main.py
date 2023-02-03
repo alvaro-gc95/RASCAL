@@ -65,7 +65,6 @@ n_components = 4
 
 if __name__ == '__main__':
 
-    # Request reanalysis data
     dw.request_reanalysis(dataset='era20c', parallelize=True)
 
     for observed_variable in observed_variables:
@@ -179,13 +178,13 @@ if __name__ == '__main__':
                 elif observed_variable == 'PCNR' and similarity_method != 'threshold':
                     reference_variable = seasonal_precipitation
 
-                reconstructed_season = reconstruction.analogs.reconstruct(observed_data=daily_climatological_variables,
-                                                                          analog_dates=analog_dates,
-                                                                          similarity_method=similarity_method,
-                                                                          sample_size=pondered_mean_sample_size,
-                                                                          analog_distances=analog_distances,
-                                                                          reference_variable=reference_variable,
-                                                                          threshold=85)
+                reconstructed_season = reconstruction.analogs.reconstruct_by_analogs(observed_data=daily_climatological_variables,
+                                                                                     analog_dates=analog_dates,
+                                                                                     similarity_method=similarity_method,
+                                                                                     sample_size=pondered_mean_sample_size,
+                                                                                     analog_distances=analog_distances,
+                                                                                     reference_variable=reference_variable,
+                                                                                     threshold=85)
 
                 reconstructed_series.loc[seasonal_test_dates] = reconstructed_season
 

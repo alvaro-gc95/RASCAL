@@ -78,3 +78,7 @@ n_components: 4
 # Analog method
 analog_pool_size: 30
 weighted_mean_sample_size: 3
+distance: 'euclidean'
+
+validation_window_size: 10
+validation_window_type: 'centered'

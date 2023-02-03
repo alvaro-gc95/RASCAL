@@ -1,16 +1,24 @@
-import pandas as pd
-from eofs.xarray import Eof
-import xarray as xr
-import numpy as np
-import reconstruction.utils
-from scipy.stats import percentileofscore
+"""
+Reconstruct meteorological data through the "analog method"
+
+contact: alvaro@intermet.es
+"""
+
 import os
 import pickle
+
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from eofs.xarray import Eof
+from scipy.stats import percentileofscore
 
-validation_window_size = 10  # Days
+import reconstruction.utils
+
+config = reconstruction.utils.open_yaml('config.yaml')
 
 
 def calculate_anomalies(data_array: xr.DataArray, standardize=False):
@@ -160,8 +168,8 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
         validation_window = reconstruction.utils.get_validation_window(
             test_date=pd.to_datetime(date),
             dates=pd.to_datetime(test_pcs['time'].values),
-            window_size=validation_window_size,
-            window_type='centered'
+            window_size=config.get('validation_window_size'),
+            window_type=config.get('validation_window_type')
         )
         validation_window = pd.to_datetime(validation_window)
         validation_dates = sorted(list(set(training_dates) - set(validation_window)))
@@ -170,7 +178,7 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
         distances = calculate_distances(
             origin=test_pcs.sel(time=date),
             points=training_set.sel(time=validation_dates),
-            distance='euclidean'
+            distance=config.get('distance')
         )
 
         # Sort the distances to find the closest days in the PC space
@@ -186,7 +194,7 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
     return analog_distances, analog_dates
 
 
-def reconstruct(observed_data, analog_dates, similarity_method='closest', **kwargs):
+def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='closest', **kwargs):
     """
     Reconstruct time series
     :param observed_data: pd.DataFrame. All observations.
@@ -210,48 +218,28 @@ def reconstruct(observed_data, analog_dates, similarity_method='closest', **kwar
         reconstructed_pool = analog_dates.copy()
         reconstructed_pool = reconstructed_pool.apply(lambda x: observed_data[variable].loc[x].values)
 
-        # Select as analog the closest day in the PCs space
         if similarity_method == 'closest':
+            reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_neighbor(
+                analog_pool=reconstructed_pool
+            )
 
-            # Maximum and minimum bands
-            reconstructed_data[variable + ' min band'] = \
-                reconstructed_pool.filter(items=reconstructed_pool.columns).min(axis=1)
-            reconstructed_data[variable + ' max band'] = \
-                reconstructed_pool.filter(items=reconstructed_pool.columns).max(axis=1)
-
-            # Closest neighbor
-            reconstructed_data[variable] = reconstructed_pool[0]
-
-        # Crate a synthetic analog from the weighted average of the "sample_size" closest neighbors
-        elif similarity_method == 'pondered':
+        elif similarity_method == 'average':
             if 'sample_size' not in kwargs.keys():
                 raise AttributeError('Missing argument: sample_size')
-
             elif 'analog_distances' not in kwargs.keys():
                 raise AttributeError('Missing argument: analog_distances')
-
             else:
-
-                # Weight for averaging (Squared distance)
-                coefs = kwargs['analog_distances'][range(kwargs['sample_size'])].apply(lambda x: x ** 2)
-
-                # Reconstruction values
-                values = reconstructed_pool[range(kwargs['sample_size'])]
-
-                # Maximum and minimum bands
-                reconstructed_data[variable + ' min band'] = \
-                    values.filter(items=values.columns).min(axis=1)
-                reconstructed_data[variable + ' max band'] = \
-                    values.filter(items=values.columns).max(axis=1)
-
-                # Weighted average
-                reconstructed_data[variable] = (coefs * values).sum(axis=1) / coefs.sum(axis=1)
+                reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_weighted_average(
+                    analog_pool=reconstructed_pool,
+                    analog_distances=kwargs['analog_distances'],
+                    sample_size=kwargs['sample_size']
+                )
 
         elif similarity_method == 'percentiles':
             if 'reference_variable' not in kwargs.keys():
                 raise AttributeError('Missing argument: reference_variable')
-
             else:
+
                 # Reanalysis data of the analog pool
                 reanalysis_pool = analog_dates.copy()
                 reanalysis_pool = reanalysis_pool.apply(
@@ -261,48 +249,101 @@ def reconstruct(observed_data, analog_dates, similarity_method='closest', **kwar
                 reanalysis_pool['original'] = kwargs['reference_variable'][variable + ' reanalysis'].loc[
                     pd.to_datetime(reanalysis_pool.index)]
 
-                # Calculate reanalysis and observed distributions of the analog pool
-                for date in reconstructed_data.index:
-                    # Percentile value of the day to recosntruct using reanalysis data
-                    reanalysis_percentile = percentileofscore(
-                        reanalysis_pool.loc[date].values,
-                        score=reanalysis_pool['original'].loc[date]
-                    )
+                reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_percentile(
+                    secondary_predictor_pool=reanalysis_pool,
+                    analog_dates=list(reconstructed_data.index),
+                    analog_pool=reconstructed_pool
+                )
 
-                    # Percentiles of each observation in the analog pool
-                    reconstructed_percentile = np.array(
-                        [percentileofscore(reconstructed_pool.loc[date].values, score=analog)
-                         for analog in reconstructed_pool.loc[date].values])
+        else:
+            raise AttributeError('Method ' + similarity_method + ' doesnot exist')
 
-                    # Minimum distance between the reanalysis percentile and observed percentiles
-                    closest_percentile = min(abs(reconstructed_percentile - reanalysis_percentile))
-                    closest_percentile_idx = list(abs(reconstructed_percentile - reanalysis_percentile)).index(
-                        closest_percentile)
-
-                    # Get the analog day as the closest percentile
-                    reconstructed_data[variable].loc[date] = reconstructed_pool[closest_percentile_idx].loc[date]
-
-                # Maximum and minimum bands
-                reconstructed_data[variable + ' min band'] = \
-                    reconstructed_pool.filter(items=reconstructed_pool.columns).min(axis=1)
-                reconstructed_data[variable + ' max band'] = \
-                    reconstructed_pool.filter(items=reconstructed_pool.columns).max(axis=1)
-
-        elif similarity_method == 'threshold':
-
-            # Reanalysis data of the analog pool
-            reanalysis_pool = analog_dates.copy()
-            reanalysis_pool = reanalysis_pool.apply(
-                lambda x: kwargs['reference_variable']['RHMA reanalysis'].loc[x].values
-            )
-            kwargs['reference_variable'].index = pd.to_datetime(kwargs['reference_variable'].index)
-            reanalysis_pool['original'] = kwargs['reference_variable']['RHMA reanalysis'].loc[
-                pd.to_datetime(reanalysis_pool.index)]
-
-            # If the closest analog is above the treshold, then True
-            true_dates = reanalysis_pool.loc[reanalysis_pool[0] >= kwargs['threshold']].index
-
-            reconstructed_data[variable] = 0
-            reconstructed_data[variable].loc[true_dates] = reconstructed_pool[0].loc[true_dates]
+        reconstructed_data[variable + ' min band'] = reconstruction_min_band
+        reconstructed_data[variable + ' max band'] = reconstruction_max_band
+        reconstructed_data[variable] = reconstruction_series
 
     return reconstructed_data
+
+
+def get_closest_neighbor(analog_pool: pd.DataFrame):
+    """
+    Get the analog day as the closest to the day to reconstruct.
+    :param analog_pool: Historical data in the pool of analogues. The columns of the dataframe must be
+    sorted by closeness to the original day.
+    """
+    # Maximum and minimum bands
+    reconstruction_min_band = analog_pool.filter(items=analog_pool.columns).min(axis=1)
+    reconstruction_max_band = analog_pool.filter(items=analog_pool.columns).max(axis=1)
+
+    # Closest neighbor
+    reconstruction_series = analog_pool[0]
+
+    return reconstruction_series, reconstruction_min_band, reconstruction_max_band
+
+
+def get_weighted_average(analog_pool: pd.DataFrame, analog_distances: pd.DataFrame, sample_size: int):
+    """
+    Get a synthetic analog made of the weighted average of the "sample_size" closest neighbors. The weight is
+    proportional to the inverse squared distance.
+    :param analog_pool: Historical data in the pool of analogues. The columns of the dataframe must be
+    sorted by closeness to the original day.
+    :param analog_distances: Dataframe of the distances of the members of the analog pool sorted by closeness
+    :param sample_size: int. Number of member of the pool to use for the average
+    """
+
+    # Weight for averaging (Inverse squared distance)
+    coefs = analog_distances[range(sample_size)].apply(lambda x: 1/x ** 2)
+
+    # Reconstruction values
+    reconstruction_values = analog_pool[range(sample_size)]
+
+    # Maximum and minimum bands
+    reconstruction_min_band = reconstruction_values.filter(items=reconstruction_values.columns).min(axis=1)
+    reconstruction_max_band = reconstruction_values.filter(items=reconstruction_values.columns).max(axis=1)
+
+    # Weighted average
+    reconstruction_series = (coefs * reconstruction_values).sum(axis=1) / coefs.sum(axis=1)
+
+    return reconstruction_series, reconstruction_min_band, reconstruction_max_band
+
+
+def get_closest_percentile(secondary_predictor_pool: pd.DataFrame,
+                           analog_dates: list,
+                           analog_pool: pd.DataFrame):
+    """
+    selects as an analogue the day whose data in the historical series is of the same percentile as the day to be
+    reconstructed in the secondary predictor series.
+    :param secondary_predictor_pool: Values of the secondary predictor in the analog pool
+    :param analog_dates: Dates of the analogs in the pool
+    :param analog_pool: Values oof the analog in the pool
+    """
+
+    reconstruction_series = pd.DataFrame(index=analog_dates)
+
+    # Calculate reanalysis and observed distributions of the analog pool
+    for date in analog_dates:
+        # Percentile value of the day to reconstruct using reanalysis data
+        secondary_predictor_percentile = percentileofscore(
+            secondary_predictor_pool.loc[date].values,
+            score=secondary_predictor_pool['original'].loc[date]
+        )
+
+        # Percentiles of each observation in the analog pool
+        reconstructed_percentile = np.array(
+            [percentileofscore(analog_pool.loc[date].values, score=analog)
+             for analog in analog_pool.loc[date].values]
+        )
+
+        # Minimum distance between the reanalysis percentile and observed percentiles
+        closest_percentile = min(abs(reconstructed_percentile - secondary_predictor_percentile))
+        closest_percentile_idx = list(abs(reconstructed_percentile - secondary_predictor_percentile)).index(
+            closest_percentile)
+
+        # Get the analog day as the closest percentile
+        reconstruction_series.loc[date] = analog_pool[closest_percentile_idx].loc[date]
+
+    # Maximum and minimum bands
+    reconstruction_min_band = analog_pool.filter(items=analog_pool.columns).min(axis=1)
+    reconstruction_max_band = analog_pool.filter(items=analog_pool.columns).max(axis=1)
+
+    return reconstruction_series, reconstruction_min_band, reconstruction_max_band

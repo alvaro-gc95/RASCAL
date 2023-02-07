@@ -147,6 +147,7 @@ def open_observations(path: str, variables: list):
     data = pd.DataFrame()
     # List of all the files in the directory of observations of the station
     files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    print(files)
     # Search the desired observed variable file through all the files in the directory
     for file, variable in itertools.product(files, variables):
         # Open if the file corresponds to the selected variable

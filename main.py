@@ -14,8 +14,11 @@ import autoval.climate
 import autoval.utils
 import autoval.statistics
 
-initial_year = 1900
-final_year = 2010
+
+config = reconstruction.utils.open_yaml('config.yaml')
+
+initial_year = config.get('initial_year')
+final_year = config.get('final_year')
 years = [str(y) for y in range(initial_year, final_year + 1)]
 
 # Paths
@@ -49,7 +52,7 @@ reanalysis_variables = {
 # 'PCNR': '950_157', relative humidity at 950hPa
 # 'PCNR': 'SURF_168.128', Dewpoint temperature
 
-observed_variables = ['PCNR']
+observed_variables = ['TMPA']
 
 predictors_acronyms = {
     'TMPA': ['925_129'],
@@ -57,15 +60,14 @@ predictors_acronyms = {
     'PCNR': ['SURF_71.162', 'SURF_72.162']
 }
 
-analog_pool_size = 30
-pondered_mean_sample_size = 3
 similarity_method = 'percentiles'  # closest, pondered, percentiles, threshold
 
-n_components = 4
+training_start = config.get('training_start')
+training_end = config.get('training_end')
 
 if __name__ == '__main__':
 
-    dw.request_reanalysis(dataset='era20c', parallelize=True)
+    # dw.request_reanalysis(dataset='era20c', parallelize=True)
 
     for observed_variable in observed_variables:
 
@@ -75,24 +77,17 @@ if __name__ == '__main__':
         # Open all data from a station
         daily_climatological_variables = reconstruction.utils.get_daily_stations(station, observed_variable)
 
-        if observed_variable == 'PCNR' and similarity_method == 'threshold':
-            daily_climatological_variables['RHMA'] = reconstruction.utils.get_daily_stations(station, 'RHMA')
-            rh_thr = reconstruction.utils.get_humidity_to_precipitation(
-                humidity=daily_climatological_variables['RHMA'],
-                precipitation=daily_climatological_variables['PCNR']
-            )
-
         # Dates to use for the PCA
         training_dates = pd.date_range(
-            start=datetime.datetime(initial_year, 1, 1),
-            end=datetime.datetime(final_year, 12, 31),
+            start=datetime.datetime(training_start[0], training_start[1], training_start[2]),
+            end=datetime.datetime(training_end[0], training_end[1], training_end[2]),
             freq='1D')
 
         # Dates with available data
-        observed_dates = list(
+        observed_dates = sorted(list(
             set(training_dates) &
             set(autoval.utils.clean_dataset(daily_climatological_variables).index)
-        )
+        ))
 
         # Testing dates
         test_dates = pd.date_range(
@@ -119,7 +114,7 @@ if __name__ == '__main__':
             lon=station_longitude
         )
 
-        for similarity_method in ['percentiles']:
+        for similarity_method in config.get('similarity_methods'):
 
             # Data reconstruction
             min_band_columns = [c + ' min band' for c in daily_climatological_variables.columns]
@@ -136,7 +131,10 @@ if __name__ == '__main__':
                 seasonal_observed_dates = sorted(list(set(seasonal_training_dates) & set(observed_dates)))
 
                 # Get seasonal variables
-                predictor_anomalies = reconstruction.analogs.calculate_anomalies(seasonal_predictors, standardize=True)
+                predictor_anomalies = reconstruction.analogs.calculate_anomalies(
+                    seasonal_predictors,
+                    standardize=config.get('standardize_anomalies')
+                )
 
                 if secondary_predictors.precipitation is not None:
                     seasonal_precipitation = secondary_predictors.precipitation.loc[seasonal_test_dates]
@@ -151,14 +149,18 @@ if __name__ == '__main__':
                     seasonal_humidity = secondary_predictors.relative_humidity.loc[seasonal_test_dates]
 
                 # Get PCs
+                if not os.path.exists('./pca/'):
+                    os.makedirs('./pca/')
+
+                # Create a new dir
                 solver_name = (
-                        './eofs/' +
+                        './pca/' +
                         season + '_'
                         + ' '.join(predictor_variables) + '_'
                         + str(initial_year) + str(final_year) + '.pkl'
                 )
                 solver = reconstruction.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
-                pcs = solver.pcs(npcs=n_components, pcscaling=1)
+                pcs = solver.pcs(npcs=config.get('n_components'), pcscaling=config.get('pca_scaling'))
 
                 # Plot EOF maps
                 # reconstruction.analogs.plot_pca(solver_name, n_components, vectorial=True)
@@ -167,7 +169,7 @@ if __name__ == '__main__':
                 analog_distances, analog_dates = reconstruction.analogs.get_analog_pool(
                     training_set=pcs.sel(time=seasonal_observed_dates),
                     test_pcs=pcs.sel(time=seasonal_test_dates),
-                    pool_size=analog_pool_size
+                    pool_size=config.get('analog_pool_size')
                 )
 
                 # Reconstruct the season
@@ -178,15 +180,19 @@ if __name__ == '__main__':
                 elif observed_variable == 'PCNR' and similarity_method != 'threshold':
                     reference_variable = seasonal_precipitation
 
-                reconstructed_season = reconstruction.analogs.reconstruct_by_analogs(observed_data=daily_climatological_variables,
-                                                                                     analog_dates=analog_dates,
-                                                                                     similarity_method=similarity_method,
-                                                                                     sample_size=pondered_mean_sample_size,
-                                                                                     analog_distances=analog_distances,
-                                                                                     reference_variable=reference_variable,
-                                                                                     threshold=85)
+                reconstructed_season = reconstruction.analogs.reconstruct_by_analogs(
+                    observed_data=daily_climatological_variables,
+                    analog_dates=analog_dates,
+                    similarity_method=similarity_method,
+                    sample_size=config.get('weighted_mean_sample_size'),
+                    analog_distances=analog_distances,
+                    reference_variable=reference_variable
+                )
 
                 reconstructed_series.loc[seasonal_test_dates] = reconstructed_season
+
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
 
             reconstructed_series.to_csv(output_path +
                                         station + '_' +
@@ -200,26 +206,10 @@ if __name__ == '__main__':
                                                   '_observations_' +
                                                   str(initial_year) + str(final_year) + '.csv')
 
-            forecast = pd.read_csv(output_path +
-                                   station + '_' +
-                                   observed_variable +
-                                   '_reconstruction_' + similarity_method + '_' +
-                                   str(initial_year) + str(final_year) + '.csv', index_col=0)
-            forecast.index = pd.to_datetime(forecast.index)
-
-            observation = pd.read_csv(output_path +
-                                      station + '_' +
-                                      observed_variable +
-                                      '_observations_' +
-                                      str(initial_year) + str(final_year) + '.csv', index_col=0)
-            observation.index = pd.to_datetime(observation.index)
-
-            reconstruction_path = output_path + station + '_' + observed_variable
-
         # Evaluate reconstruction
         reconstruction.skill_evaluation.compare_method_skill(
             output_path + station + '_',
             observed_variable,
-            ['closest', 'pondered', 'threshold'],
+            config.get('similarity_methods'),
             initial_year, final_year
         )

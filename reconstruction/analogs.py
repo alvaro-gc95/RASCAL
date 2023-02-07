@@ -254,6 +254,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                     analog_dates=list(reconstructed_data.index),
                     analog_pool=reconstructed_pool
                 )
+                reconstruction_series = reconstruction_series['variable']
 
         else:
             raise AttributeError('Method ' + similarity_method + ' doesnot exist')
@@ -318,7 +319,7 @@ def get_closest_percentile(secondary_predictor_pool: pd.DataFrame,
     :param analog_pool: Values oof the analog in the pool
     """
 
-    reconstruction_series = pd.DataFrame(index=analog_dates)
+    reconstruction_series = pd.DataFrame(index=analog_dates, columns=['variable'])
 
     # Calculate reanalysis and observed distributions of the analog pool
     for date in analog_dates:

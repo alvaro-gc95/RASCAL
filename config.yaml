@@ -67,8 +67,16 @@ synoptic_max_lat: 48
 synoptic_min_lon: -15
 synoptic_max_lon: 1.5
 
-# Secondary predictor
+predictor_of_variable:
+  TMPA: [ '925_129' ]
+  WSPD: [ '925_129' ]
+  PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
 
+# Secondary predictor
+secondary_predictor_of_variable:
+  TMPA: [ 'SURF_167']
+  WSPD: [ 'SURF_165', 'SURF_166' ]
+  PCNR: [ 'SURF_228']
 
 # Principal Component Analysis
 standardize_anomalies: True

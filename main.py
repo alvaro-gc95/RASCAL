@@ -1,21 +1,23 @@
-import multiprocessing
-import itertools
-import reconstruction.downloader as dw
-import seaborn as sn
+"""
+##################################################
+# ----------------- ANTISER -------------------- #
+##################################################
+ANalog TIme SEries Reconstructor
+Version 1.0
+Contact: alvaro@intermet.es
+"""
+
 import os
-import reconstruction.utils
-import reconstruction.analogs
-import reconstruction.skill_evaluation
+import antiser.utils
+import antiser.analogs
+import antiser.skill_evaluation
 import datetime
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import autoval.climate
 import autoval.utils
-import autoval.statistics
+import antiser.statistics
 
 
-config = reconstruction.utils.open_yaml('config.yaml')
+config = antiser.utils.open_yaml('config.yaml')
 
 initial_year = config.get('initial_year')
 final_year = config.get('final_year')
@@ -60,14 +62,17 @@ predictors_acronyms = {
     'PCNR': ['SURF_71.162', 'SURF_72.162']
 }
 
-similarity_method = 'percentiles'  # closest, pondered, percentiles, threshold
-
 training_start = config.get('training_start')
 training_end = config.get('training_end')
+
+test_start = config.get('test_start')
+test_end = config.get('test_end')
 
 if __name__ == '__main__':
 
     # dw.request_reanalysis(dataset='era20c', parallelize=True)
+
+    station = antiser.utils.get_station(station)
 
     for observed_variable in observed_variables:
 
@@ -75,7 +80,7 @@ if __name__ == '__main__':
         predictor_variables = predictors_acronyms[observed_variable]
 
         # Open all data from a station
-        daily_climatological_variables = reconstruction.utils.get_daily_stations(station, observed_variable)
+        daily_climatological_variables = antiser.utils.get_daily_stations(station.code, observed_variable)
 
         # Dates to use for the PCA
         training_dates = pd.date_range(
@@ -91,12 +96,12 @@ if __name__ == '__main__':
 
         # Testing dates
         test_dates = pd.date_range(
-            start=datetime.datetime(initial_year, 1, 1),
-            end=datetime.datetime(final_year, 12, 31),
+            start=datetime.datetime(test_start[0], test_start[1], test_start[2]),
+            end=datetime.datetime(test_end[0], test_end[1], test_end[2]),
             freq='1D')
 
         # Get the reanalysis predictor data
-        predictors = reconstruction.utils.concatenate_reanalysis_data(
+        predictors = antiser.utils.concatenate_reanalysis_data(
             era20c_path,
             predictor_variables,
             dates=years,
@@ -106,7 +111,7 @@ if __name__ == '__main__':
         )
 
         # Get reanalysis series in the grid point
-        secondary_predictors = reconstruction.utils.ReanalysisSeries(
+        secondary_predictors = antiser.utils.ReanalysisSeries(
             era20c_path,
             observed_variable,
             years,
@@ -116,7 +121,7 @@ if __name__ == '__main__':
 
         for similarity_method in config.get('similarity_methods'):
 
-            # Data reconstruction
+            # Data antiser
             min_band_columns = [c + ' min band' for c in daily_climatological_variables.columns]
             max_band_columns = [c + ' max band' for c in daily_climatological_variables.columns]
             reconstruction_columns = min_band_columns + max_band_columns + list(daily_climatological_variables.columns)
@@ -131,7 +136,7 @@ if __name__ == '__main__':
                 seasonal_observed_dates = sorted(list(set(seasonal_training_dates) & set(observed_dates)))
 
                 # Get seasonal variables
-                predictor_anomalies = reconstruction.analogs.calculate_anomalies(
+                predictor_anomalies = antiser.analogs.calculate_anomalies(
                     seasonal_predictors,
                     standardize=config.get('standardize_anomalies')
                 )
@@ -159,14 +164,14 @@ if __name__ == '__main__':
                         + ' '.join(predictor_variables) + '_'
                         + str(initial_year) + str(final_year) + '.pkl'
                 )
-                solver = reconstruction.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
+                solver = antiser.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
                 pcs = solver.pcs(npcs=config.get('n_components'), pcscaling=config.get('pca_scaling'))
 
                 # Plot EOF maps
-                # reconstruction.analogs.plot_pca(solver_name, n_components, vectorial=True)
+                # antiser.analogs.plot_pca(solver_name, n_components, vectorial=True)
 
                 # Get the closest days in the PCs space to get an analog pool
-                analog_distances, analog_dates = reconstruction.analogs.get_analog_pool(
+                analog_distances, analog_dates = antiser.analogs.get_analog_pool(
                     training_set=pcs.sel(time=seasonal_observed_dates),
                     test_pcs=pcs.sel(time=seasonal_test_dates),
                     pool_size=config.get('analog_pool_size')
@@ -180,7 +185,7 @@ if __name__ == '__main__':
                 elif observed_variable == 'PCNR' and similarity_method != 'threshold':
                     reference_variable = seasonal_precipitation
 
-                reconstructed_season = reconstruction.analogs.reconstruct_by_analogs(
+                reconstructed_season = antiser.analogs.reconstruct_by_analogs(
                     observed_data=daily_climatological_variables,
                     analog_dates=analog_dates,
                     similarity_method=similarity_method,
@@ -195,20 +200,24 @@ if __name__ == '__main__':
                 os.makedirs(output_path)
 
             reconstructed_series.to_csv(output_path +
-                                        station + '_' +
+                                        station.code + '_' +
                                         observed_variable +
                                         '_reconstruction_' + similarity_method + '_' +
                                         str(initial_year) + str(final_year) + '.csv')
 
             daily_climatological_variables.to_csv(output_path +
-                                                  station + '_' +
+                                                  station.code + '_' +
                                                   observed_variable +
                                                   '_observations_' +
                                                   str(initial_year) + str(final_year) + '.csv')
-
-        # Evaluate reconstruction
-        reconstruction.skill_evaluation.compare_method_skill(
-            output_path + station + '_',
+            print(output_path +
+                                                  station.code + '_' +
+                                                  observed_variable +
+                                                  '_observations_' +
+                                                  str(initial_year) + str(final_year) + '.csv')
+        # Evaluate antiser
+        antiser.skill_evaluation.compare_method_skill(
+            output_path + station.code + '_',
             observed_variable,
             config.get('similarity_methods'),
             initial_year, final_year

@@ -1,0 +1,97 @@
+########################################################################################################################
+# RASCAL Configuration file                                                                                            #
+#                                                                                                                      #
+# contact: alvaro@intermet.es                                                                                          #
+########################################################################################################################
+
+# Total period
+initial_year: 1900
+final_year: 2010
+
+# Training period
+training_start: [1900, 1, 1]
+training_end: [2010, 12, 31]
+
+# Test period
+test_start: [1900, 1, 1]
+test_end: [2010, 12, 31]
+
+# Input paths
+reanalysis_path: '/mnt/disco2/data/NWP'
+observations_path: '/home/alvaro/data/stations/rmpnsg/'
+
+# Output paths
+pca_path: './pca/'
+output_path: './output/'
+plot_path: './plots/'
+
+# Stations
+stations:
+  - 'PN001002'
+  - 'PN001003'
+  - 'navacerrada'
+
+# Variable
+variables:
+  - 'PCNR'
+  - 'TMAX'
+  - 'TMIN'
+
+# Reanalysis variables
+# ['variable acronym', 'pressure level']
+reanalysis_variable_levels:
+  - ['129', '925']
+  - ['131', '850']
+  - ['132', '850']
+  - ['130', '850']
+  - ['157', '950']
+  - ['228', 'surf']
+  - ['165', 'surf']
+  - ['166', 'surf']
+  - ['246', 'surf']
+  - ['247', 'surf']
+  - ['167', 'surf']
+  - ['71.162', 'surf']
+  - ['72.162', 'surf']
+  - ['168', 'surf']
+
+# Reanalysis domain
+reanalysis_min_lat: 20
+reanalysis_max_lat: 80
+reanalysis_min_lon: -60
+reanalysis_max_lon: 20
+
+# Synoptic predictor
+synoptic_min_lat: 33
+synoptic_max_lat: 48
+synoptic_min_lon: -15
+synoptic_max_lon: 1.5
+
+predictor_of_variable:
+  TMPA: [ '925_129' ]
+  WSPD: [ '925_129' ]
+  PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
+
+# Secondary predictor
+secondary_predictor_of_variable:
+  TMPA: [ 'SURF_167']
+  WSPD: [ 'SURF_165', 'SURF_166' ]
+  PCNR: [ 'SURF_228']
+
+# Principal Component Analysis
+standardize_anomalies: True
+pca_scaling: 1
+n_components: 4
+
+# Analog method
+analog_pool_size: 30
+weighted_mean_sample_size: 3
+distance: 'euclidean'
+
+validation_window_size: 10
+validation_window_type: 'centered'
+
+similarity_methods:
+  - 'closest'
+  - 'average'
+  - 'percentiles'

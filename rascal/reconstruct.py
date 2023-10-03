@@ -4,14 +4,14 @@ Reconstruct time series
 contact: alvaro@intermet.es
 """
 
-import antiser.analogs
-import antiser.utils
+import rascal.analogs
+import rascal.utils
 import autoval.utils
 import pandas as pd
 import datetime
 import os
 
-config = antiser.utils.open_yaml('config.yaml')
+config = rascal.utils.open_yaml('config.yaml')
 
 training_start = config.get('training_start')
 training_end = config.get('training_end')
@@ -63,9 +63,9 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
 
     predictor_variables = config.get('predictor_of_variable')[variable_name]
 
-    observed_daily_data = antiser.utils.get_daily_stations(station, variable_name)
+    observed_daily_data = rascal.utils.get_daily_stations(station, variable_name)
 
-    antiser.utils.get_station(station)
+    rascal.utils.get_station(station)
 
     training_dates, test_dates, observed_dates = split_dates(
         training_start,
@@ -76,7 +76,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
     )
 
     # Get the reanalysis predictor data
-    predictors = antiser.utils.concatenate_reanalysis_data(
+    predictors = rascal.utils.concatenate_reanalysis_data(
         era20c_path,
         predictor_variables,
         dates=years,
@@ -86,7 +86,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
     )
 
     # Get reanalysis series in the grid point
-    secondary_predictors = antiser.utils.ReanalysisSeries(
+    secondary_predictors = rascal.utils.ReanalysisSeries(
         era20c_path,
         observed_variable,
         years,
@@ -94,7 +94,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
         lon=station_longitude
     )
 
-    # Data antiser
+    # Data rascal
     min_band_columns = [c + ' min band' for c in observed_daily_data.columns]
     max_band_columns = [c + ' max band' for c in observed_daily_data.columns]
     reconstruction_columns = min_band_columns + max_band_columns + list(observed_daily_data.columns)
@@ -109,7 +109,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
         seasonal_observed_dates = sorted(list(set(seasonal_training_dates) & set(observed_dates)))
 
         # Get seasonal variables
-        predictor_anomalies = antiser.analogs.calculate_anomalies(
+        predictor_anomalies = rascal.analogs.calculate_anomalies(
             seasonal_predictors,
             standardize=config.get('standardize_anomalies')
         )
@@ -137,14 +137,14 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
                 + ' '.join(predictor_variables) + '_'
                 + str(initial_year) + str(final_year) + '.pkl'
         )
-        solver = antiser.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
+        solver = rascal.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
         pcs = solver.pcs(npcs=config.get('n_components'), pcscaling=config.get('pca_scaling'))
 
         # Plot EOF maps
-        # antiser.analogs.plot_pca(solver_name, n_components, vectorial=True)
+        # rascal.analogs.plot_pca(solver_name, n_components, vectorial=True)
 
         # Get the closest days in the PCs space to get an analog pool
-        analog_distances, analog_dates = antiser.analogs.get_analog_pool(
+        analog_distances, analog_dates = rascal.analogs.get_analog_pool(
             training_set=pcs.sel(time=seasonal_observed_dates),
             test_pcs=pcs.sel(time=seasonal_test_dates),
             pool_size=config.get('analog_pool_size')
@@ -158,7 +158,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
         elif variable_name == 'PCNR' and similarity_method != 'threshold':
             reference_variable = seasonal_precipitation
 
-        reconstructed_season = antiser.analogs.reconstruct_by_analogs(
+        reconstructed_season = rascal.analogs.reconstruct_by_analogs(
             observed_data=observed_daily_data,
             analog_dates=analog_dates,
             similarity_method=similarity_method,

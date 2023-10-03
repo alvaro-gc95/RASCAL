@@ -93,7 +93,7 @@ class DaskPCA:
 
     def regression(self):
         """
-        Calculate the PCA regression and the antiser error
+        Calculate the PCA regression and the rascal error
         """
         regression = self.pc.to_numpy().dot(self.eof.to_numpy().transpose())
         regression = pd.DataFrame(regression, index=self.pc.index, columns=self.eof.index)

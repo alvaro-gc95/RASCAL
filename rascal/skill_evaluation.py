@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.stats import percentileofscore
-import antiser.statistics
+import rascal.statistics
 
 import autoval.utils
 import seaborn as sns
@@ -503,7 +503,7 @@ def get_skill_by_percentiles(predicted, observed, similarity_method):
             predicted[col].to_frame()
         )
 
-        observation_by_percentiles = antiser.statistics.split_in_percentile_intervals(
+        observation_by_percentiles = rascal.statistics.split_in_percentile_intervals(
             observed_col,
             percentile_intervals
         )
@@ -538,7 +538,7 @@ def get_skill_by_percentiles(predicted, observed, similarity_method):
             observation = observation.squeeze()
             # Join the DataFrames
             data = pd.concat([prediction, observation], axis=1)
-            data.columns = ['antiser', 'observation']
+            data.columns = ['rascal', 'observation']
 
             pearson = data.corr(method='pearson').values[1, 0]
             skills['Pearson'].loc[interval] = pearson
@@ -572,7 +572,7 @@ def get_skill_by_season(predicted, observed, similarity_method):
 
         # Join the DataFrames
         data = pd.concat([prediction, observation], axis=1)
-        data.columns = ['antiser', 'observation']
+        data.columns = ['rascal', 'observation']
 
         # Divide the data by seasons
         data['season'] = [seasons[date.month] for date in data.index]
@@ -589,13 +589,13 @@ def get_skill_by_season(predicted, observed, similarity_method):
             seasonal_data = seasonal_data.drop(['season'], axis=1)
 
             rmse = get_rmse(
-                predicted=seasonal_data['antiser'].values,
+                predicted=seasonal_data['rascal'].values,
                 observed=seasonal_data['observation'].values
             )
             skills.loc[season, 'RMSE'] = rmse
 
             mbe = get_mbe(
-                predicted=seasonal_data['antiser'].values,
+                predicted=seasonal_data['rascal'].values,
                 observed=seasonal_data['observation'].values
             )
             skills['MBE'].loc[season] = mbe
@@ -607,14 +607,14 @@ def get_skill_by_season(predicted, observed, similarity_method):
             skills['Spearman'].loc[season] = spearman
 
             brier = get_bs(
-                predicted=seasonal_data['antiser'].values,
+                predicted=seasonal_data['rascal'].values,
                 observed=seasonal_data['observation'].values,
                 threshold=1
             )
             skills['Brier Score'].loc[season] = brier
 
             # get_confusion_matrix(
-            #     predicted=seasonal_data['antiser'].values,
+            #     predicted=seasonal_data['rascal'].values,
             #     observed=seasonal_data['observation'].values,
             #     threshold=1
             # )

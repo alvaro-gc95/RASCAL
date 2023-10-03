@@ -10,11 +10,11 @@ import multiprocessing
 
 from ecmwfapi import ECMWFDataServer
 
-import antiser.utils
+import rascal.utils
 
 server = ECMWFDataServer()
 
-config = antiser.utils.open_yaml('config.yaml')
+config = rascal.utils.open_yaml('config.yaml')
 
 
 def separate_variables_level_type():

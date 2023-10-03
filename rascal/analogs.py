@@ -16,9 +16,9 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from eofs.xarray import Eof
 from scipy.stats import percentileofscore
 
-import antiser.utils
+import rascal.utils
 
-config = antiser.utils.open_yaml('config.yaml')
+config = rascal.utils.open_yaml('config.yaml')
 
 
 def calculate_anomalies(data_array: xr.DataArray, standardize=False):
@@ -50,7 +50,7 @@ def get_pca(data_array, file_name, overwrite=True):
         # Principal Components Analysis
         solver = Eof(data_array, center=False)
         # Save the solver object
-        antiser.utils.save_object(solver, file_name)
+        rascal.utils.save_object(solver, file_name)
     else:
         # Open solver object
         with open(file_name, 'rb') as inp:
@@ -79,7 +79,7 @@ def plot_pca(file_name, n_components, vectorial=False):
 
     if vectorial:
         # Separate the concatenated vectorial variable in u, v and module
-        eofs = antiser.utils.separate_concatenated_components(eofs)
+        eofs = rascal.utils.separate_concatenated_components(eofs)
 
         for mode in eofs['mode'].values:
             # Defining the figure
@@ -173,7 +173,7 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
 
     for date in test_pcs['time'].values:
         # Delete values close the date to reconstruct
-        validation_window = antiser.utils.get_validation_window(
+        validation_window = rascal.utils.get_validation_window(
             test_date=pd.to_datetime(date),
             dates=pd.to_datetime(test_pcs['time'].values),
             window_size=config.get('validation_window_size'),
@@ -216,7 +216,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
     min_band_columns = [c + ' min band' for c in observed_data.columns]
     max_band_columns = [c + ' max band' for c in observed_data.columns]
 
-    # Create the antiser empty dataframe
+    # Create the rascal empty dataframe
     reconstruction_columns = min_band_columns + max_band_columns + list(observed_data.columns)
     reconstructed_data = pd.DataFrame(index=analog_dates.index, columns=reconstruction_columns)
 

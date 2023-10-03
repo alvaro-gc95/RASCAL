@@ -5,12 +5,11 @@ Contact: alvaro@intermet.es
 """
 
 import itertools
+import rascal.utils
+import rascal.statistics
 
 import numpy as np
 import pandas as pd
-
-import autoval.utils
-import antiser.statistics
 
 
 class Climatology:
@@ -40,7 +39,7 @@ class Climatology:
             daily_variables = pd.concat([daily_variables, vmean], axis=1)
 
         if 'RADS01' in self._obj.columns:
-            autoval.utils.Preprocess(self._obj).clear_low_radiance()
+            rascal.utils.Preprocess(self._obj).clear_low_radiance()
             rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
             rads_total = rads_total.where(rads_total > 0, np.nan)
             daily_variables = pd.concat([daily_variables, rads_total], axis=1)
@@ -114,7 +113,7 @@ class Climatology:
 
                 for variable in self._obj.columns:
 
-                    linear_regressor, regr_res = antiser.statistics.linear_regression(
+                    linear_regressor, regr_res = rascal.statistics.linear_regression(
                         x=related_site_hm[variable].to_frame(),
                         y=hour_dataset[variable].to_frame()
                     )

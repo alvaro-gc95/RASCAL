@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import antiser.climate
-from antiser.climate import Climatology
-import antiser.statistics
+import rascal.climate
+from rascal.climate import Climatology
+import rascal.statistics
 
 impossible_thresholds = {
     'TMPA': [-100, 100],
@@ -209,7 +209,7 @@ class AutoValidation:
         # Principal Components Analysis of daily variables for each month
         for month, monthly_df in daily_climatological_variables.groupby(daily_climatological_variables.index.month):
             # Get EOFs, PCAs and explained variance ratios
-            pca = antiser.statistics.DaskPCA(monthly_df, n_components=3, mode='T', standardize=True)
+            pca = rascal.statistics.DaskPCA(monthly_df, n_components=3, mode='T', standardize=True)
 
             # Reconstruct the original time series with the PCA
             regression_month, regression_error_month = pca.regression()
@@ -218,7 +218,7 @@ class AutoValidation:
             anomaly.loc[pca.anomaly.index] = pca.anomaly
             regression_error.loc[regression_error_month.index] = regression_error
 
-        # Get the error of the antiser in hourly resolution
+        # Get the error of the rascal in hourly resolution
         regression_error = anomaly - regression
         regression_error = regression_error.where(regression_error > 0, np.nan)
         regression_error = regression_error.resample('H').ffill()
@@ -385,7 +385,7 @@ def get_significant_residuals(original: pd.DataFrame, reference: pd.DataFrame, c
     """
 
     regression, residuals = Climatology(original).spatial_regression(reference)
-    regression_series = antiser.climate.table_to_series(regression, original.index)
+    regression_series = rascal.climate.table_to_series(regression, original.index)
 
     correlation_columns = [c for c in regression_series.columns if 'correlation' in c]
 

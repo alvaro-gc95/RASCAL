@@ -4,6 +4,8 @@
 ########################################################################################################################
 Version 1.0
 Contact: alvaro@intermet.es
+
+This is an example of how to use RASCAL step by step.
 """
 
 import os
@@ -67,6 +69,29 @@ test_start = config.get('test_start')
 test_end = config.get('test_end')
 
 if __name__ == '__main__':
+
+    # 1) Get historical record
+
+    # 2) Get reanalysis data
+
+    # 3) Get Principal Components of the reanalysis data
+
+    # 4) Take an analog pool for each day to reconstruct
+
+    # 5) Select an analog for each similarity method
+
+    # 6) Analyze the skill pof the reconstruction
+
+
+
+
+
+
+
+
+
+
+
 
     # dw.request_reanalysis(dataset='era20c', parallelize=True)
 

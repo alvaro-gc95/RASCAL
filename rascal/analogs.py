@@ -7,18 +7,129 @@ contact: alvaro@intermet.es
 import os
 import pickle
 
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+
 from eofs.xarray import Eof
 from scipy.stats import percentileofscore
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import rascal.utils
 
 config = rascal.utils.open_yaml('config.yaml')
+
+
+class Predictor:
+    def __init__(self, data):
+        self.predictors = data
+
+    def anomalies(self, seasons=None, standardize=None):
+        anomalies = []
+        for i, season in enumerate(seasons):
+            # Get the seasonal anomalies of the predictor field
+            season_dates = [date for date in pd.to_datetime(self.predictors["time"].values) if date.month in season]
+            seasonal_predictors = self.predictors.sel(time=season_dates)
+            seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
+            seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
+            anomalies.append(seasonal_anomalies)
+        anomalies = xr.merge(anomalies)
+        return anomalies
+
+    def pcs(self, npcs, seasons=None, standardize=None , vectorial=None, pcscaling=None):
+
+        if seasons is None:
+            seasons = [[int(m) for m in range(1, 13)]]
+        if standardize is None:
+            standardize = True
+        if pcscaling is None:
+            pcscaling = 1
+
+        anomalies = self.anomalies(seasons=seasons, standardize=standardize)
+
+        pcs = []
+        for i, season in enumerate(seasons):
+            seasonal_anomalies = anomalies.sel(season=i).dropna(dim="time")
+            seasonal_anomalies = seasonal_anomalies.to_array().squeeze(dim="variable")
+            initial_year = str(int(pd.to_datetime(seasonal_anomalies["time"].values[0]).year))
+            final_year = str(int(pd.to_datetime(seasonal_anomalies["time"].values[-1]).year))
+            pca_solver_filename = (
+                    './pca/' +
+                    ''.join([str(s).zfill(2) for s in season]) + '_'
+                    + str(initial_year) + str(final_year) + '.pkl'
+            )
+            pcs_solver = rascal.analogs.get_pca_solver(seasonal_anomalies, pca_solver_filename, overwrite=False)
+            seasonal_pcs = pcs_solver.pcs(npcs=npcs, pcscaling=pcscaling)
+            seasonal_pcs = seasonal_pcs.expand_dims({"season": [i]})
+            pcs.append(seasonal_pcs)
+        pcs = xr.merge(pcs)
+        return pcs
+
+
+class Analogs:
+    def __init__(self, pcs, observations, dates):
+        self.pcs = pcs
+        self.dates = dates
+        self.observations = observations
+
+    def get_pool(self, size=None):
+
+        if size is None:
+            size = 100
+
+        analog_distances = []
+        analog_dates = []
+        for season in self.pcs["season"].values:
+
+            seasonal_pcs = self.pcs.sel(season=season).dropna(dim="time").to_array().squeeze(dim="variable")
+
+            # Split in seasonal test and training dates
+            seasonal_training_dates = pd.to_datetime(seasonal_pcs["time"].values)
+            seasonal_test_dates = sorted(list(set(seasonal_training_dates) & set(pd.to_datetime(self.dates))))
+            seasonal_observed_dates = sorted(list(
+                set(seasonal_training_dates) &
+                set(rascal.utils.clean_dataset(self.observations).index)
+            ))
+
+            if len(seasonal_observed_dates) == 0:
+                print("Warning: There is not any observational record during the training period")
+
+            seasonal_analog_distances, seasonal_analog_dates = get_analog_pool(
+                training_set=seasonal_pcs.sel(time=seasonal_observed_dates),
+                test_pcs=seasonal_pcs.sel(time=seasonal_test_dates),
+                pool_size=size
+            )
+
+            analog_distances.append(seasonal_analog_distances)
+            analog_dates.append(seasonal_analog_dates)
+
+        analog_distances = pd.concat(analog_distances, axis=0)
+        analog_dates = pd.concat(analog_dates, axis=0)
+
+        analog_distances = analog_distances.sort_index()
+        analog_dates = analog_dates.sort_index()
+
+        return analog_distances, analog_dates
+
+    def reconstruct(self, pool_size=None, method=None, sample_size=None, reference_variable=None):
+
+        if pool_size is None:
+            pool_size = 100
+        if method is None:
+            method = "closest"
+
+        analog_distances, analog_dates = self.get_pool(size=pool_size)
+        reconstruction = reconstruct_by_analogs(
+            observed_data=self.observations,
+            analog_dates=analog_dates,
+            similarity_method=method,
+            analog_distances=analog_distances,
+            sample_size=sample_size,
+            reference_variable=reference_variable
+        )
+        return reconstruction
 
 
 def calculate_anomalies(data_array: xr.DataArray, standardize=False):
@@ -37,7 +148,7 @@ def calculate_anomalies(data_array: xr.DataArray, standardize=False):
     return anomalies
 
 
-def get_pca(data_array, file_name, overwrite=True):
+def get_pca_solver(data_array, file_name, overwrite=True):
     """
     Do Principal Components Analysis and save the solver as object
     :param data_array: DataArray. Field to analyze.
@@ -149,7 +260,6 @@ def calculate_distances(origin, points, distance='euclidean', **kwargs):
         left = np.dot(y_mu, inv_covmat)
         mahal = np.dot(left, y_mu.T)
         return mahal.diagonal()
-        pass
     else:
         raise AttributeError('Error: ' + distance + ' distance does not exist')
 
@@ -232,9 +342,9 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
             )
 
         elif similarity_method == 'average':
-            if 'sample_size' not in kwargs.keys():
+            if "sample_size" not in kwargs.keys() or "sample_size" is None:
                 raise AttributeError('Missing argument: sample_size')
-            elif 'analog_distances' not in kwargs.keys():
+            elif "analog_distances" not in kwargs.keys() or "sample_size" is None:
                 raise AttributeError('Missing argument: analog_distances')
             else:
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_weighted_average(
@@ -301,7 +411,7 @@ def get_weighted_average(analog_pool: pd.DataFrame, analog_distances: pd.DataFra
     """
 
     # Weight for averaging (Inverse squared distance)
-    coefs = analog_distances[range(sample_size)].apply(lambda x: 1/x ** 2)
+    coefs = analog_distances[range(sample_size)].apply(lambda x: 1 / x ** 2)
 
     # Reconstruction values
     reconstruction_values = analog_pool[range(sample_size)]

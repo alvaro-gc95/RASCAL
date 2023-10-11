@@ -31,6 +31,10 @@ stations:
   - 'PN001003'
   - 'navacerrada'
 
+# Station coordinates
+station_coordinates:
+  - [0]
+
 # Variable
 variables:
   - 'PCNR'
@@ -62,10 +66,10 @@ reanalysis_min_lon: -60
 reanalysis_max_lon: 20
 
 # Synoptic predictor
-synoptic_min_lat: 33
-synoptic_max_lat: 48
-synoptic_min_lon: -15
-synoptic_max_lon: 1.5
+predictor_lat_min: 33
+predictor_lat_max: 48
+predictor_lon_min: -15
+predictor_lon_max: 1.5
 
 predictor_of_variable:
   TMPA: [ '925_129' ]
@@ -79,6 +83,11 @@ secondary_predictor_of_variable:
   PCNR: [ 'SURF_228']
 
 # Principal Component Analysis
+seasons:
+  - [12, 1, 2]
+  - [3, 4, 5]
+  - [6, 7, 8]
+  - [9, 10, 11]
 standardize_anomalies: True
 pca_scaling: 1
 n_components: 4

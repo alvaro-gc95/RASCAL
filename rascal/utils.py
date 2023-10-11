@@ -1,19 +1,26 @@
+import os
+import re
+import tqdm
+import yaml
+import pickle
 import datetime
 import itertools
-import os
-import pickle
-import re
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import tqdm
-import xarray as xr
-import yaml
-
 import rascal.climate
 
+import numpy as np
+import pandas as pd
+import xarray as xr
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+variables_longnames = {
+    'temperature': 'TMPA',
+    'dewpoint_temperature': 'TDEW',
+    'precipitation': 'PCNR',
+    'relative_humidity': 'RHMA',
+    'wind_speed': 'WSPD',
+    'wind_direction': 'WDIR'
+}
 
 era_variable_names = {
     'TMPA': 't2m',
@@ -32,26 +39,29 @@ reanalysis_variables = {
 
 
 class ReanalysisSeries:
-    def __init__(self, path, variables, dates, lat, lon):
+    def __init__(self, path, variables, years, lat, lon):
         self.variables = variables
-        self.dates = dates
+        self.dates = years
         self.lat = lat
         self.lon = lon
 
         self.precipitation, self.temperature, self.u, self.v, self.relative_humidity = \
-            get_reanalysis(variables, path, dates, lat, lon)
+            get_reanalysis(variables, path, years, lat, lon)
 
 
 class Station:
-    def __init__(self, pandas_obj):
-        self.code = pandas_obj['code'].values[0]
-        self.name = pandas_obj['name'].values[0]
-        self.longitude = pandas_obj['longitude'].values[0]
-        self.latitude = pandas_obj['latitude'].values[0]
-        self.altitude = pandas_obj['altitude'].values[0]
+    def __init__(self, path):
+        meta = pd.read_csv(path + 'meta.csv')
+        self.path = path
+
+        self.code = meta['code'].values[0]
+        self.name = meta['name'].values[0]
+        self.longitude = meta['longitude'].values[0]
+        self.latitude = meta['latitude'].values[0]
+        self.altitude = meta['altitude'].values[0]
 
     def get_data(self, variable):
-        data = get_daily_stations(self.code, variable)
+        data = get_daily_data(self.path, variable)
         return data
 
     def get_gridpoint(self, grid_latitudes, grid_longitudes):
@@ -62,6 +72,36 @@ class Station:
             point_latitude=self.latitude
         )
         return grid_latitudes[ilat], grid_longitudes[ilon]
+
+
+class Predictor:
+    def __init__(self, path):
+        pass
+
+    def crop_domain(self, lat_min, lat_max, lon_min, lon_max):
+        return crop_domain(self.data, lat_min, lat_max, lon_min, lon_max)
+
+
+# class Station:
+#     def __init__(self, pandas_obj):
+#         self.code = pandas_obj['code'].values[0]
+#         self.name = pandas_obj['name'].values[0]
+#         self.longitude = pandas_obj['longitude'].values[0]
+#         self.latitude = pandas_obj['latitude'].values[0]
+#         self.altitude = pandas_obj['altitude'].values[0]
+#
+#     def get_data(self, variable):
+#         data = get_daily_stations(self.code, variable)
+#         return data
+#
+#     def get_gridpoint(self, grid_latitudes, grid_longitudes):
+#         ilat, ilon = get_nearest_gridpoint(
+#             grid_latitudes=grid_latitudes,
+#             grid_longitudes=grid_longitudes,
+#             point_longitude=self.longitude,
+#             point_latitude=self.latitude
+#         )
+#         return grid_latitudes[ilat], grid_longitudes[ilon]
 
 
 class Preprocess:
@@ -340,13 +380,12 @@ def open_observations(path: str, variables: list):
     data = pd.DataFrame()
     # List of all the files in the directory of observations of the station
     files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-    print(files)
     # Search the desired observed variable file through all the files in the directory
     for file, variable in itertools.product(files, variables):
         # Open if the file corresponds to the selected variable
         if file.find(variable) != -1:
             # Open the file
-            variable_data = pd.read_csv(path + file, index_col=0, encoding='latin3')
+            variable_data = pd.read_csv(path + file, index_col=0)
             # Rename the values column
             variable_data.columns.values[0] = variable
             # Change the format of the index to datetime
@@ -361,39 +400,45 @@ def open_observations(path: str, variables: list):
         return data
 
 
-def get_daily_stations(station_code: str, variable: str):
+def get_daily_data(path: str, variable: str):
+    observations = open_observations(path, [variable])
+    daily_observations = rascal.climate.Climatology(observations).climatological_variables()
+    return daily_observations
+
+
+# def get_daily_stations(station_code: str, variable: str):
+#     """
+#     Get observed data from RMPNG format or AEMET format. Transform the data to daily resolution and get the relevant
+#     climatological variables.
+#     :param station_code: str. Name of the station.
+#     :param variable: str. Variable acronym.
+#     :return daily_climatological_variables: DataFrame.
+#     """
+#
+#     data_path = '/home/alvaro/data/'
+#     observations_path = data_path + 'stations/rmpnsg/1h/'
+#     aemet_path = data_path + 'stations/rmpnsg/1d/'
+#
+#     # Open all data from a station
+#     if 'PN' in station_code:
+#         observations = open_observations(observations_path + station_code + '/', [variable])
+#         daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
+#     else:
+#         print(aemet_path + station_code + '/', variable)
+#         observations = open_aemet(aemet_path + station_code + '/', variable)
+#         # Get variables in daily resolution
+#         if variable == 'TMPA':
+#             daily_climatological_variables = observations.resample('D').mean()
+#         else:
+#             daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
+#
+#     return daily_climatological_variables
+
+
+def open_data(files_paths, grouping=None, number=None):
     """
-    Get observed data from RMPNG format or AEMET format. Transform the data to daily resolution and get the relevant
-    climatological variables.
-    :param station_code: str. Name of the station.
-    :param variable: str. Variable acronym.
-    :return daily_climatological_variables: DataFrame.
-    """
-
-    data_path = '/home/alvaro/data/'
-    observations_path = data_path + 'stations/rmpnsg/1h/'
-    aemet_path = data_path + 'stations/rmpnsg/1d/'
-
-    # Open all data from a station
-    if 'PN' in station_code:
-        observations = open_observations(observations_path + station_code + '/', [variable])
-        daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-    else:
-        print(aemet_path + station_code + '/', variable)
-        observations = open_aemet(aemet_path + station_code + '/', variable)
-        # Get variables in daily resolution
-        if variable == 'TMPA':
-            daily_climatological_variables = observations.resample('D').mean()
-        else:
-            daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-
-    return daily_climatological_variables
-
-
-def open_grib(grib_paths, grouping=None, number=None):
-    """
-    Combine a list of grib files in one DataArray.
-    :param grib_paths: list. Paths of the grib file to open
+    Combine a list of files (.grib or .nc usually) in one DataArray.
+    :param files_paths: list. Paths of the grib file to open
     :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
     method=('sum', 'mean', 'min', 'max')
     :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
@@ -403,18 +448,21 @@ def open_grib(grib_paths, grouping=None, number=None):
     frequencies = {'hourly': "1H", 'daily': "1D", 'monthly': "1M", 'yearly': "1Y"}
 
     # Declare a list where each element of the list is one selected grib file in array format
-    data_series = [0] * len(grib_paths)
+    data_series = [0] * len(files_paths)
 
     # Open each file and fill the list
-    for i, grib_path in enumerate(grib_paths):
+    for i, file_path in enumerate(files_paths):
 
         # First check if the file exists
-        if not os.path.isfile(grib_path):
-            print('     The file ' + grib_path + ' does not exist')
+        if not os.path.isfile(file_path):
+            print('     The file ' + file_path + ' does not exist')
 
         else:
             # Load to xarray
-            ds = xr.load_dataset(grib_path, engine="cfgrib")
+            if file_path.split('.')[-1] == 'grib':
+                ds = xr.load_dataset(file_path, engine="cfgrib")
+            else:
+                ds = xr.load_dataset(file_path)
             ds = ds.astype(np.float32)
 
             # Group the data
@@ -448,7 +496,7 @@ def open_grib(grib_paths, grouping=None, number=None):
     return combined
 
 
-def get_grib(nwp_path, variable, dates, grouping=None, number=None):
+def get_data(nwp_path, variable, dates, grouping=None, number=None):
     """
     Open a set of daily grib files.
     :param nwp_path: str. Path to the grib files.
@@ -478,9 +526,9 @@ def get_grib(nwp_path, variable, dates, grouping=None, number=None):
 
     # Open the files
     if number is not None:
-        data = open_grib(all_file_paths, grouping, number)
+        data = open_data(all_file_paths, grouping, number)
     else:
-        data = open_grib(all_file_paths, grouping)
+        data = open_data(all_file_paths, grouping)
 
     return data
 
@@ -526,17 +574,16 @@ def get_gridpoint_series(data, lon, lat):
     return data
 
 
-def crop_domain(data, latitude_limits, longitude_limits):
+def crop_domain(data, lat_min, lat_max, lon_min, lon_max):
     """
     Crop dataset domain.
     :param data: DataSet.
-    :param latitude_limits: list = [minimum, maximum]
-    :param longitude_limits:  list = [minimum, maximum]
+    :param lat_min: float.
+    :param lat_max: float.
+    :param lon_min: float.
+    :param lon_max: float.
     :return data: DataSet. Original dataset cropped.
     """
-
-    min_lat, max_lat = latitude_limits
-    min_lon, max_lon = longitude_limits
 
     grid_latitudes = data['latitude'].values
     grid_longitudes = data['longitude'].values
@@ -544,17 +591,17 @@ def crop_domain(data, latitude_limits, longitude_limits):
     i_min_lat, i_min_lon = get_nearest_gridpoint(
         grid_latitudes=grid_latitudes,
         grid_longitudes=grid_longitudes,
-        point_longitude=min_lon,
-        point_latitude=min_lat
+        point_longitude=lon_min,
+        point_latitude=lat_min
     )
     i_max_lat, i_max_lon = get_nearest_gridpoint(
         grid_latitudes=grid_latitudes,
         grid_longitudes=grid_longitudes,
-        point_longitude=max_lon,
-        point_latitude=max_lat
+        point_longitude=lon_max,
+        point_latitude=lat_max
     )
 
-    data = data.isel(latitude=slice(i_min_lat, i_max_lat), longitude=slice(i_min_lon, i_max_lon))
+    data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=slice(i_min_lon, i_max_lon))
 
     return data
 
@@ -578,7 +625,7 @@ def reanalysis_to_dataframe(path, dates, variable, lat, lon, grouping, ensemble_
 
     for year in tqdm.tqdm(dates, desc='   Opening grib files'):
         # Get the grib data for each year
-        year_variable = get_grib(
+        year_variable = get_data(
             path,
             variable,
             dates=[year],
@@ -749,13 +796,14 @@ def get_reanalysis(variables, reanalysis_path, dates, lat, lon):
     return precipitation, temperature, u_component, v_component, relative_humidity
 
 
-def concatenate_reanalysis_data(path, variable_names, dates, latitude_limits, longitude_limits, grouping):
+def get_predictor(path, variable_names, years, latitude_limits, longitude_limits, grouping):
     """
-    Get reanalysis data and concatenate data of different variables but same domain along the longitude axis.
+    Get the predictor data (usually reanalysis) and concatenate data of different variables but same domain along the
+    longitude axis.
     Useful for PCA of vectorial magnitudes.
     :param path: str. Path of the reanalysis data.
     :param variable_names: list. Reanalysis code name of the variables.
-    :param dates: list. Year to load.
+    :param years: list. Year to load.
     :param latitude_limits:
     :param longitude_limits:
     :param grouping:
@@ -767,13 +815,19 @@ def concatenate_reanalysis_data(path, variable_names, dates, latitude_limits, lo
 
     for j, variable_name in enumerate(variable_names):
 
-        variable = get_grib(
+        variable = get_data(
             path,
             variable_name,
-            dates=dates,
+            dates=years,
             grouping=grouping
         )
-        variable = crop_domain(variable, latitude_limits=latitude_limits, longitude_limits=longitude_limits)
+        variable = crop_domain(
+            variable,
+            lat_min=latitude_limits[0],
+            lat_max=latitude_limits[1],
+            lon_min=longitude_limits[0],
+            lon_max=longitude_limits[1]
+        )
 
         original_name = [i for i in variable.data_vars][0]
         variable = variable.rename({original_name: 'z'})
@@ -790,6 +844,7 @@ def concatenate_reanalysis_data(path, variable_names, dates, latitude_limits, lo
         variables.append(variable)
 
     variables = xr.combine_by_coords(variables)
+    variables["time"] = pd.to_datetime(variables["time"].values)
 
     return variables
 
@@ -859,7 +914,7 @@ def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series,
     return lower_adjacent_value
 
 
-def get_station(code):
+def get_station_meta(code):
     """
     Get Station latitude, longitude, altitude and full name
     :param code: str. Code of the station.
@@ -870,7 +925,3 @@ def get_station(code):
     station_data = Station(station_data)
 
     return station_data
-
-
-
-

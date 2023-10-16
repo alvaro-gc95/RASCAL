@@ -71,6 +71,8 @@ predictor_lat_max: 48
 predictor_lon_min: -15
 predictor_lon_max: 1.5
 
+predictor_grouping: "12hour_1D_mean"
+
 predictor_of_variable:
   TMPA: [ '925_129' ]
   WSPD: [ '925_129' ]
@@ -82,25 +84,33 @@ secondary_predictor_of_variable:
   WSPD: [ 'SURF_165', 'SURF_166' ]
   PCNR: [ 'SURF_228']
 
-# Principal Component Analysis
+########################################################################################################################
+# Principal Component Analysis                                                                                         #
+########################################################################################################################
 seasons:
   - [12, 1, 2]
   - [3, 4, 5]
   - [6, 7, 8]
   - [9, 10, 11]
 standardize_anomalies: True
-pca_scaling: 1
 n_components: 4
+pca_scaling: 1
+    # 0 : Un-scaled PCs.
+    # 1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
+    # 2 : PCs are multiplied by the square-root of their eigenvalue.
 
-# Analog method
+########################################################################################################################
+# Analog method                                                                                                        #
+########################################################################################################################
 analog_pool_size: 30
 weighted_mean_sample_size: 3
 distance: 'euclidean'
 
+validate: True
 validation_window_size: 10
 validation_window_type: 'centered'
 
 similarity_methods:
   - 'closest'
   - 'average'
-  - 'percentiles'
+  - 'quantilemap'

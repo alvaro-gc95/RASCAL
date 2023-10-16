@@ -14,6 +14,7 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
 from eofs.xarray import Eof
+from dask.diagnostics import ProgressBar
 from scipy.stats import percentileofscore
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
@@ -21,33 +22,128 @@ import rascal.utils
 
 config = rascal.utils.open_yaml('config.yaml')
 
+coordinate_names = ["time", "latitude", "longitude"]
+timer = True
+
 
 class Predictor:
-    def __init__(self, data):
-        self.predictors = data
+    """
+    Predictor class. This contains data about the predictor variable to use for the reconstruction.
+    """
+    def __init__(self, paths, grouping, lat_min, lat_max, lon_min, lon_max, mosaic=True):
+
+        self.data = rascal.utils.open_data(
+            files_paths=paths,
+            grouping=grouping,
+            domain=[lat_min, lat_max, lon_min, lon_max]
+        )
+
+        if mosaic:
+            self.data = self.to_mosaic()
+
+    def crop(self, lat_min, lat_max, lon_min, lon_max):
+        """
+        Crop the domain of the dataframe
+        :param lat_min: float.
+        :param lat_max: float.
+        :param lon_min: float.
+        :param lon_max: float.
+        """
+
+        self.data = rascal.utils.crop_domain(
+                self.data,
+                lat_min=lat_min,
+                lat_max=lat_max,
+                lon_min=lon_min,
+                lon_max=lon_max
+            )
+
+        return self.data
+
+    def to_mosaic(self):
+        """
+        To use various simultaneous predictors or a vectorial variable, concatenate the variables along the longitude
+        axis to obtain a single compound variable, easier to use when performing PCA.
+        """
+
+        compound_predictor = []
+        compound_predictor_name = '_'.join(self.data.data_vars)
+        final_lon = 0
+
+        for j, variable_name in enumerate(self.data.data_vars):
+
+            variable_j = self.data.rename({variable_name: compound_predictor_name})[compound_predictor_name]
+
+            if j != 0:
+                # Get the differences between the first longitude and the rest of the list.
+                # Add 1 so the first element is not zero
+                longitude_diffs = [
+                    lon - variable_j['longitude'].values[0] + 1 for lon in variable_j['longitude'].values
+                ]
+                # Get the new longitudes to concatenate
+                new_longitude = longitude_diffs + final_lon
+                variable_j = variable_j.assign_coords(longitude=new_longitude)
+
+            final_lon = variable_j['longitude'].values[-1]
+            compound_predictor.append(variable_j)
+
+        compound_predictor = xr.combine_by_coords(compound_predictor)
+        compound_predictor["time"] = pd.to_datetime(compound_predictor["time"].values)
+        compound_predictor = compound_predictor.to_array().squeeze()
+
+        self.data = compound_predictor
+        return compound_predictor
 
     def anomalies(self, seasons=None, standardize=None):
-        anomalies = []
-        for i, season in enumerate(seasons):
-            # Get the seasonal anomalies of the predictor field
-            season_dates = [date for date in pd.to_datetime(self.predictors["time"].values) if date.month in season]
-            seasonal_predictors = self.predictors.sel(time=season_dates)
-            seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
-            seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
-            anomalies.append(seasonal_anomalies)
-        anomalies = xr.merge(anomalies)
-        return anomalies
-
-    def pcs(self, npcs, seasons=None, standardize=None , vectorial=None, pcscaling=None):
+        """
+        Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
+        contained within it.
+        :param seasons: list. Months of the season. Default = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+        :param standardize: bool. Standardize anomalies. Default = True
+        :return: anomalies. xr.DataSet. dims = [time, latitude, longitude, season]
+        """
 
         if seasons is None:
             seasons = [[int(m) for m in range(1, 13)]]
         if standardize is None:
             standardize = True
+
+        # Get the seasonal anomalies of the predictor field
+        anomalies = []
+        for i, season in enumerate(seasons):
+            season_dates = [date for date in pd.to_datetime(self.data["time"].values) if date.month in season]
+            seasonal_predictors = self.data.sel(time=season_dates)
+            seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
+            seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
+            anomalies.append(seasonal_anomalies)
+        anomalies = xr.merge(anomalies)
+
+        return anomalies
+
+    @rascal.utils.timer_func
+    def pcs(self, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
+        """
+        Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
+        the analysis does not have to be performed every time.
+        :param npcs: int. Number of components.
+        :param seasons: list. List of list of months of every season.
+        :param standardize: bool. If True, the anomalies used in the PCA are standardized.
+        :param pcscaling: int. Set the scaling of the PCs used to compute covariance. The following values are accepted:
+            0 : Un-scaled PCs.
+            1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
+            2 : PCs are multiplied by the square-root of their eigenvalue.
+        :param overwrite: bool. Default = False. If True recalculate the PCA and overwrite the pickle with the PCA
+        results.
+        """
+
         if pcscaling is None:
             pcscaling = 1
+        if overwrite is None:
+            overwrite = False
 
         anomalies = self.anomalies(seasons=seasons, standardize=standardize)
+        with ProgressBar():
+            anomalies = anomalies.compute()
 
         pcs = []
         for i, season in enumerate(seasons):
@@ -60,21 +156,32 @@ class Predictor:
                     ''.join([str(s).zfill(2) for s in season]) + '_'
                     + str(initial_year) + str(final_year) + '.pkl'
             )
-            pcs_solver = rascal.analogs.get_pca_solver(seasonal_anomalies, pca_solver_filename, overwrite=False)
+            pcs_solver = rascal.analogs.get_pca_solver(seasonal_anomalies, pca_solver_filename, overwrite=overwrite)
             seasonal_pcs = pcs_solver.pcs(npcs=npcs, pcscaling=pcscaling)
             seasonal_pcs = seasonal_pcs.expand_dims({"season": [i]})
             pcs.append(seasonal_pcs)
         pcs = xr.merge(pcs)
+
         return pcs
 
 
 class Analogs:
+    """
+    Store analog days information
+    """
     def __init__(self, pcs, observations, dates):
         self.pcs = pcs
         self.dates = dates
         self.observations = observations
 
     def get_pool(self, size=None):
+        """
+        Get the pool of 'size' closest neighbors to each day
+        :param size: int. Number of neighbors in the pool.
+        :return analog_dates, analog_distances: pd.DataFrame, pd.DataFrame. 'analog_dates' contains the dates of the
+            analogs in the pool for each day. 'analog_distances' contains the  distances in the PCs space of each
+            analog to the original day.
+        """
 
         if size is None:
             size = 100
@@ -113,7 +220,20 @@ class Analogs:
 
         return analog_distances, analog_dates
 
+    @rascal.utils.timer_func
     def reconstruct(self, pool_size=None, method=None, sample_size=None, reference_variable=None):
+        """
+        Reconstruct a time series using the analog pool for each day.
+        :param pool_size: int. Size of the analog pool for each day.
+        :param method: str. Similarity method to select the best analog of the pool. Options are:
+            - 'closest': (Selected by default) Select the closest analog in the PCs space
+            - 'average': Calculate the weighted average of the 'sample_size' closest analogs in the PCs space.
+            - 'quantilemap': Select the analog that represent the same quantile in the observations pool that another
+                   reference variable.
+        :param sample_size: int. Number of analogs to average in the 'average' method
+        :param reference_variable: Predictor object. Time series of a variable to use as reference in 'quantilemap'
+        :return reconstruction: pd.DataFrame.
+        """
 
         if pool_size is None:
             pool_size = 100
@@ -129,6 +249,7 @@ class Analogs:
             sample_size=sample_size,
             reference_variable=reference_variable
         )
+
         return reconstruction
 
 
@@ -138,10 +259,8 @@ def calculate_anomalies(data_array: xr.DataArray, standardize=False):
     :param standardize: bool. Default=False. If True divide the anomalies by its standard deviation.
     :return anomalies: DataArray.
     """
-
     mean = data_array.mean(dim='time')
     anomalies = data_array - mean
-
     if standardize:
         anomalies = anomalies / anomalies.std(dim='time')
 
@@ -317,7 +436,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
     Reconstruct time series
     :param observed_data: pd.DataFrame. All observations.
     :param analog_dates: pd.DataFrame. Dates in the analog pool for each date to reconstruct.
-    :param similarity_method: str. Reconstruction method. Options = ('closet', 'pondered', 'percentile')
+    :param similarity_method: str. Reconstruction method. Options = ('closet', 'pondered', 'quantilemap')
     :param kwargs:
     :return:
     """
@@ -326,7 +445,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
     min_band_columns = [c + ' min band' for c in observed_data.columns]
     max_band_columns = [c + ' max band' for c in observed_data.columns]
 
-    # Create the rascal empty dataframe
+    # Create the empty dataframe for the reconstructed values
     reconstruction_columns = min_band_columns + max_band_columns + list(observed_data.columns)
     reconstructed_data = pd.DataFrame(index=analog_dates.index, columns=reconstruction_columns)
 
@@ -353,20 +472,19 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                     sample_size=kwargs['sample_size']
                 )
 
-        elif similarity_method == 'percentiles':
+        elif similarity_method == 'quantilemap':
             if 'reference_variable' not in kwargs.keys():
                 raise AttributeError('Missing argument: reference_variable')
             else:
+                # Convert the input predictor object to dataframe
+                secondary_predictor = kwargs["reference_variable"]
+                secondary_predictor = secondary_predictor.data.to_dataframe().drop(["latitude", "longitude"], axis=1)
 
                 # Reanalysis data of the analog pool
                 reanalysis_pool = analog_dates.copy()
-                reanalysis_pool = reanalysis_pool.apply(
-                    lambda x: kwargs['reference_variable'][variable + ' reanalysis'].loc[x].values
-                )
-                kwargs['reference_variable'].index = pd.to_datetime(kwargs['reference_variable'].index)
-                reanalysis_pool['original'] = kwargs['reference_variable'][variable + ' reanalysis'].loc[
-                    pd.to_datetime(reanalysis_pool.index)]
-
+                reanalysis_pool = reanalysis_pool.applymap(lambda x: np.squeeze(secondary_predictor.loc[x].values))
+                secondary_predictor.index = pd.to_datetime(analog_dates.index)
+                reanalysis_pool['original'] = secondary_predictor.loc[pd.to_datetime(reanalysis_pool.index)]
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_percentile(
                     secondary_predictor_pool=reanalysis_pool,
                     analog_dates=list(reconstructed_data.index),
@@ -390,6 +508,7 @@ def get_closest_neighbor(analog_pool: pd.DataFrame):
     :param analog_pool: Historical data in the pool of analogues. The columns of the dataframe must be
     sorted by closeness to the original day.
     """
+
     # Maximum and minimum bands
     reconstruction_min_band = analog_pool.filter(items=analog_pool.columns).min(axis=1)
     reconstruction_max_band = analog_pool.filter(items=analog_pool.columns).max(axis=1)
@@ -441,6 +560,7 @@ def get_closest_percentile(secondary_predictor_pool: pd.DataFrame,
 
     # Calculate reanalysis and observed distributions of the analog pool
     for date in analog_dates:
+
         # Percentile value of the day to reconstruct using reanalysis data
         secondary_predictor_percentile = percentileofscore(
             secondary_predictor_pool.loc[date].values,

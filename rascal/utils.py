@@ -13,6 +13,10 @@ import xarray as xr
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from time import time
+
+coordinate_names = ["time", "latitude", "longitude"]
+
 variables_longnames = {
     'temperature': 'TMPA',
     'dewpoint_temperature': 'TDEW',
@@ -38,17 +42,6 @@ reanalysis_variables = {
 }
 
 
-class ReanalysisSeries:
-    def __init__(self, path, variables, years, lat, lon):
-        self.variables = variables
-        self.dates = years
-        self.lat = lat
-        self.lon = lon
-
-        self.precipitation, self.temperature, self.u, self.v, self.relative_humidity = \
-            get_reanalysis(variables, path, years, lat, lon)
-
-
 class Station:
     def __init__(self, path):
         meta = pd.read_csv(path + 'meta.csv')
@@ -72,36 +65,6 @@ class Station:
             point_latitude=self.latitude
         )
         return grid_latitudes[ilat], grid_longitudes[ilon]
-
-
-class Predictor:
-    def __init__(self, path):
-        pass
-
-    def crop_domain(self, lat_min, lat_max, lon_min, lon_max):
-        return crop_domain(self.data, lat_min, lat_max, lon_min, lon_max)
-
-
-# class Station:
-#     def __init__(self, pandas_obj):
-#         self.code = pandas_obj['code'].values[0]
-#         self.name = pandas_obj['name'].values[0]
-#         self.longitude = pandas_obj['longitude'].values[0]
-#         self.latitude = pandas_obj['latitude'].values[0]
-#         self.altitude = pandas_obj['altitude'].values[0]
-#
-#     def get_data(self, variable):
-#         data = get_daily_stations(self.code, variable)
-#         return data
-#
-#     def get_gridpoint(self, grid_latitudes, grid_longitudes):
-#         ilat, ilon = get_nearest_gridpoint(
-#             grid_latitudes=grid_latitudes,
-#             grid_longitudes=grid_longitudes,
-#             point_longitude=self.longitude,
-#             point_latitude=self.latitude
-#         )
-#         return grid_latitudes[ilat], grid_longitudes[ilon]
 
 
 class Preprocess:
@@ -154,6 +117,21 @@ class Preprocess:
         self._obj['RHMA'] = (self._obj['E'] / self._obj['ES']) * 100
 
         del self._obj['E'], self._obj['ES']
+
+
+def timer_func(func):
+    """
+    This function shows the execution time of  the function object passed
+    """
+
+    def wrap_func(*args, **kwargs):
+        t1 = time()
+        result = func(*args, **kwargs)
+        t2 = time()
+        print(f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s')
+        return result
+
+    return wrap_func
 
 
 def save_object(obj, filename):
@@ -406,131 +384,134 @@ def get_daily_data(path: str, variable: str):
     return daily_observations
 
 
-# def get_daily_stations(station_code: str, variable: str):
-#     """
-#     Get observed data from RMPNG format or AEMET format. Transform the data to daily resolution and get the relevant
-#     climatological variables.
-#     :param station_code: str. Name of the station.
-#     :param variable: str. Variable acronym.
-#     :return daily_climatological_variables: DataFrame.
-#     """
-#
-#     data_path = '/home/alvaro/data/'
-#     observations_path = data_path + 'stations/rmpnsg/1h/'
-#     aemet_path = data_path + 'stations/rmpnsg/1d/'
-#
-#     # Open all data from a station
-#     if 'PN' in station_code:
-#         observations = open_observations(observations_path + station_code + '/', [variable])
-#         daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-#     else:
-#         print(aemet_path + station_code + '/', variable)
-#         observations = open_aemet(aemet_path + station_code + '/', variable)
-#         # Get variables in daily resolution
-#         if variable == 'TMPA':
-#             daily_climatological_variables = observations.resample('D').mean()
-#         else:
-#             daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-#
-#     return daily_climatological_variables
+@timer_func
+def get_files(nwp_path, variables, dates, file_format):
+    """
+    Get all files
+    :param nwp_path: str. Path to the grib files.
+    :param variables: list. Variables to open.
+    :param dates: list. Dates to open.
+    :param file_format: str. File format
+    :return all_file_paths: dict. Lists of all data file paths for each variable
+    """
+
+    # List of al the grib files
+    all_file_paths = {}
+    for variable in variables:
+        # Get all file paths
+        file_paths = [np.nan] * len(dates)
+        for i, year in enumerate(dates):
+            file_name = (nwp_path + 'y_' + str(year) + '/' + str(year) + '_' + str(variable) + file_format)
+            # If the file exists, put the path in the list and save the correspondent date and hours
+            if os.path.isfile(file_name):
+                # Put the daily grib file name in the total file names array
+                file_paths[i] = file_name
+            else:
+                print(file_name + ' does not exist')
+        # Delete empty slots
+        file_paths = [item for item in file_paths if not (pd.isnull(item)) is True]
+        # Add files to the dictionary
+        all_file_paths[variable] = file_paths
+
+    return all_file_paths
 
 
-def open_data(files_paths, grouping=None, number=None):
+def group_data(ds, grouping=None):
+    """
+    Group data of a dataframe. It can group data in
+    By default grouping is None, then the central hour of the day is taken as the representative time of the day.
+    It possible to take individual hours, or different frequencies of timesteps based on the usual xarray syntaxis.
+    The grouping then is made on the selected frequency. groupings = ['sum', 'mean', 'min', 'max']
+    :param ds: xr.DataArray or xr.DataSet
+    :param grouping: str. 'hour(optional)_frequency_grouping'
+    :return: ds: grouped xr.DataArray or xr.DataSet
+    """
+
+    # The default configuration is to take the 12:00 of each day
+    if grouping is None:
+        grouping = "12hour_1D_mean"
+
+    if len(grouping.split('_')) == 3:
+        hour, frequency, group_type = grouping.split('_')
+    elif len(grouping.split('_')) == 2:
+        frequency, group_type = grouping.split('_')
+        hour = False
+    else:
+        raise AttributeError("Grouping str must have between 2 and 3 elements separated by _")
+
+    if isinstance(hour, str):
+        hour = int(hour.replace("hour", ""))
+        ds_time = [date for date in pd.to_datetime(ds['time'].values) if date.hour == hour]
+        ds = ds.sel(time=ds_time)
+
+    if group_type == 'sum':
+        ds = ds.resample(time=frequency).sum()
+    elif group_type == 'mean':
+        ds = ds.resample(time=frequency).mean()
+    elif group_type == 'min':
+        ds = ds.resample(time=frequency).min()
+    elif group_type == 'max':
+        ds = ds.resample(time=frequency).max()
+    else:
+        raise AttributeError('Grouping method (' + group_type + ') does not exists')
+
+    return ds
+
+
+def clean_coordinates(ds):
+    """
+    Delete unidimensional coordinates that might produce merging problems
+    """
+    variables_not_coords = [variable for variable in ds.variables if variable not in coordinate_names]
+    variables_to_drop = [variable for variable in variables_not_coords if ds[variable].size == 1]
+    ds = ds.drop_vars(variables_to_drop).squeeze()
+    return ds
+
+
+@timer_func
+def open_data(files_paths, grouping=None, number=None, domain=None):
     """
     Combine a list of files (.grib or .nc usually) in one DataArray.
     :param files_paths: list. Paths of the grib file to open
     :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
     method=('sum', 'mean', 'min', 'max')
     :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
+    :param domain: list [minimum latitude, maximum latitude, minimum longitude, maximum longitude]
     :return combined: DataArray. All files concatenated in time
     """
+    combined_ds = []
+    for variable, files in files_paths.items():
+        # Check if the file exists
+        for file_path in files:
+            if not os.path.isfile(file_path):
+                print('     The file ' + file_path + ' does not exist')
+                files.remove(file_path)
+        # Load to xarray
+        variable_ds = xr.open_mfdataset(files)
+        # Reduce memory usage
+        variable_ds = variable_ds.astype(np.float32)
+        # Clean unidimensional coordinates to avoid merging problems
+        variable_ds = clean_coordinates(variable_ds)
+        # Group the data
+        variable_ds = group_data(variable_ds, grouping)
+        # Select domain
+        if domain is not None:
+            variable_ds = crop_domain(
+                variable_ds,
+                lat_min=domain[0],
+                lat_max=domain[1],
+                lon_min=domain[2],
+                lon_max=domain[3]
+            )
+        # Select ensemble member if possible
+        if number is not None:
+            ds = ds.sel(number=number).squeeze()
 
-    frequencies = {'hourly': "1H", 'daily': "1D", 'monthly': "1M", 'yearly': "1Y"}
+        combined_ds.append(variable_ds)
 
-    # Declare a list where each element of the list is one selected grib file in array format
-    data_series = [0] * len(files_paths)
+    combined_ds = xr.merge(combined_ds)
 
-    # Open each file and fill the list
-    for i, file_path in enumerate(files_paths):
-
-        # First check if the file exists
-        if not os.path.isfile(file_path):
-            print('     The file ' + file_path + ' does not exist')
-
-        else:
-            # Load to xarray
-            if file_path.split('.')[-1] == 'grib':
-                ds = xr.load_dataset(file_path, engine="cfgrib")
-            else:
-                ds = xr.load_dataset(file_path)
-            ds = ds.astype(np.float32)
-
-            # Group the data
-            if grouping is None:
-                ds_time = [date for date in pd.to_datetime(ds['time'].values) if date.hour == 12]
-                ds = ds.sel(time=ds_time)
-                ds = ds.resample(time='1D').mean()
-            else:
-
-                frequency, group_type = grouping.split('_')
-
-                if group_type == 'sum':
-                    ds = ds.resample(time=frequencies[frequency]).sum()
-                elif group_type == 'mean':
-                    ds = ds.resample(time=frequencies[frequency]).mean()
-                elif group_type == 'min':
-                    ds = ds.resample(time=frequencies[frequency]).min()
-                elif group_type == 'max':
-                    ds = ds.resample(time=frequencies[frequency]).max()
-                else:
-                    raise AttributeError('Grouping method (' + group_type + ') does not exists')
-
-            # Select ensemble member if possible
-            if number is not None:
-                ds = ds.sel(number=number).squeeze()
-
-            data_series[i] = ds
-
-    combined = xr.concat(data_series, dim='time')
-
-    return combined
-
-
-def get_data(nwp_path, variable, dates, grouping=None, number=None):
-    """
-    Open a set of daily grib files.
-    :param nwp_path: str. Path to the grib files.
-    :param variable: str. Variable to open.
-    :param dates: list. Dates to open.
-    :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
-    method=('sum', 'mean', 'min', 'max')
-    :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
-    :return data: array. All the daily data in a singular array.
-    """
-
-    # List of al the grib files
-    all_file_paths = [np.nan] * len(dates)
-
-    for i, year in enumerate(dates):
-        # GRIB filename
-        file_name = (nwp_path + 'y_' + str(year) + '/' + str(year) + '_' + str(variable) + '.grib')
-        # If the file exists, put the path in the list and save the correspondent date and hours
-        if os.path.isfile(file_name):
-            # Put the daily grib file name in the total file names array
-            all_file_paths[i] = file_name
-        else:
-            print(file_name + ' does not exist')
-
-    # Delete empty slots
-    all_file_paths = [item for item in all_file_paths if not (pd.isnull(item)) is True]
-
-    # Open the files
-    if number is not None:
-        data = open_data(all_file_paths, grouping, number)
-    else:
-        data = open_data(all_file_paths, grouping)
-
-    return data
+    return combined_ds
 
 
 def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, point_latitude):
@@ -551,43 +532,26 @@ def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, poin
     return ilat, ilon
 
 
-def get_gridpoint_series(data, lon, lat):
+def crop_domain(data, lat_min, lat_max, lon_min, lon_max, grid_buffer=None):
     """
-    Find the data in a dataset gridpoint
-    :param data: DataSet. Contains "latitude" and "longitude" as dimensions.
-    :param lon: float.
-    :param lat: float.
-    :return data: DataSet. Original dataset in the nearest gridpoint to the selected latitude and longitude.
-    """
-    grid_latitudes = data['latitude'].values
-    grid_longitudes = data['longitude'].values
-
-    ilat, ilon = get_nearest_gridpoint(
-        grid_latitudes=grid_latitudes,
-        grid_longitudes=grid_longitudes,
-        point_longitude=lon,
-        point_latitude=lat
-    )
-
-    data = data.isel(latitude=ilat, longitude=ilon).squeeze()
-
-    return data
-
-
-def crop_domain(data, lat_min, lat_max, lon_min, lon_max):
-    """
-    Crop dataset domain.
+    Crop dataset domain. Works with regular grids. Irregular grids are on wishlist.
     :param data: DataSet.
     :param lat_min: float.
     :param lat_max: float.
     :param lon_min: float.
     :param lon_max: float.
+    :param grid_buffer: list. [x buffer (int), y buffer (int)]. Number of gridpoint to expand outside the real closest
+    gridpoint in the margins.
     :return data: DataSet. Original dataset cropped.
     """
+
+    if grid_buffer is None:
+        grid_buffer = [0, 0]
 
     grid_latitudes = data['latitude'].values
     grid_longitudes = data['longitude'].values
 
+    # Get index of the closest grid points
     i_min_lat, i_min_lon = get_nearest_gridpoint(
         grid_latitudes=grid_latitudes,
         grid_longitudes=grid_longitudes,
@@ -601,252 +565,28 @@ def crop_domain(data, lat_min, lat_max, lon_min, lon_max):
         point_latitude=lat_max
     )
 
-    data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=slice(i_min_lon, i_max_lon))
+    # Abb buffer grid points
+    if i_min_lat != len(grid_latitudes):
+        i_min_lat = i_min_lat + grid_buffer[1]
+    if i_max_lat != 0:
+        i_max_lat = i_max_lat - grid_buffer[1]
+
+    if i_min_lon != 0:
+        i_min_lon = i_min_lon - grid_buffer[0]
+    if i_max_lon != len(grid_longitudes):
+        i_max_lon = i_max_lon + grid_buffer[0]
+
+    # Crop domain to a point, line or 2D grid
+    if i_max_lat == i_min_lat and i_max_lon != i_min_lon:
+        data = data.isel(latitude=i_max_lat, longitude=slice(i_min_lon, i_max_lon))
+    elif i_max_lat != i_min_lat and i_max_lon == i_min_lon:
+        data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=i_max_lon)
+    elif i_max_lat == i_min_lat and i_max_lon == i_min_lon:
+        data = data.isel(latitude=i_max_lat, longitude=i_max_lon)
+    else:
+        data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=slice(i_min_lon, i_max_lon))
 
     return data
-
-
-def reanalysis_ensemble_to_dataframe(path, dates, variable, lat, lon, grouping):
-    variable_series = []
-
-    for ensemble_number in range(9):
-        ensemble_member = reanalysis_to_dataframe(path, dates, variable, lat, lon, grouping, ensemble_number)
-        variable_series.append(ensemble_member)
-
-    variable_series = pd.concat(variable_series, axis=1)
-    variable_series.index = pd.to_datetime(variable_series.index)
-    variable_series.to_csv('ERA20CM_' + variable + '.csv')
-
-    return variable_series
-
-
-def reanalysis_to_dataframe(path, dates, variable, lat, lon, grouping, ensemble_number=None):
-    variable_series = []
-
-    for year in tqdm.tqdm(dates, desc='   Opening grib files'):
-        # Get the grib data for each year
-        year_variable = get_data(
-            path,
-            variable,
-            dates=[year],
-            grouping=grouping,
-            number=ensemble_number
-        )
-
-        # Get data in the grid point
-        year_variable = get_gridpoint_series(
-            year_variable,
-            lat=lat,
-            lon=lon
-        )
-        print(year_variable)
-        year_variable = year_variable.to_dataframe()
-
-        print(year_variable)
-        # Get the netcdf name of the variable
-        level, variable_reanalysis_code = variable.split('_')
-        variable_code = [code for code, code_reanalysis in reanalysis_variables.items()
-                         if variable_reanalysis_code in code_reanalysis][0]
-        variable_netcdf_name = era_variable_names[variable_code]
-
-        # Select only the variable values
-        year_variable = year_variable[variable_netcdf_name]
-
-        if ensemble_number is None:
-            year_variable = year_variable.rename(variable_code)
-        else:
-            year_variable = year_variable.rename({variable_netcdf_name: variable_code + '_' + str(ensemble_number)})
-
-        variable_series.append(year_variable)
-
-    variable_series = pd.concat(variable_series, axis=0)
-
-    # Save the dataframe
-    variable_series.index = pd.to_datetime(variable_series.index)
-
-    if ensemble_number is None:
-        variable_series.to_csv('ERA20C_' + variable + '.csv')
-    else:
-        variable_series.to_csv('ERA20C_' + variable + '_' + str(ensemble_number) + '.csv')
-
-    return variable_series
-
-
-def get_reanalysis(variables, reanalysis_path, dates, lat, lon):
-    precipitation = None
-    temperature = None
-    u_component = None
-    v_component = None
-    relative_humidity = None
-
-    # Get reanalysis data in the gridpoint
-    if 'PCNR' in variables:
-        if os.path.isfile('ERA20CM_' + reanalysis_variables['PCNR'] + '.csv'):
-            precipitation = pd.read_csv('ERA20CM_' + reanalysis_variables['PCNR'] + '.csv', index_col=0)
-            precipitation.index = pd.to_datetime(precipitation.index)
-        else:
-            reanalysis_ensemble_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['PCNR'],
-                lat=lat,
-                lon=lon,
-                grouping='daily_sum'
-            )
-        precipitation.columns = [col + ' reanalysis' for col in precipitation.columns]
-        precipitation = precipitation * 1000
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['RHMA'] + '.csv'):
-            relative_humidity = pd.read_csv('ERA20C_' + reanalysis_variables['RHMA'] + '.csv', index_col=0)
-            relative_humidity.index = pd.to_datetime(relative_humidity.index)
-        else:
-
-            relative_humidity = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['RHMA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-        print(relative_humidity)
-        relative_humidity = rascal.climate.Climatology(relative_humidity).climatological_variables()
-        print(relative_humidity)
-        relative_humidity.columns = [col + ' reanalysis' for col in relative_humidity.columns]
-        print(relative_humidity)
-        """
-        if (os.path.isfile('ERA20C_' + reanalysis_variables['TDEW'] + '.csv') and
-                os.path.isfile('ERA20C_' + reanalysis_variables['TMPA'] + '.csv')):
-
-            temperature_dew = pd.read_csv('ERA20C_' + reanalysis_variables['TDEW'] + '.csv', index_col=0)
-            temperature_dew.index = pd.to_datetime(temperature_dew.index)
-
-            temperature = pd.read_csv('ERA20C_' + reanalysis_variables['TMPA'] + '.csv', index_col=0)
-            temperature.index = pd.to_datetime(temperature.index)
-
-        else:
-            temperature_dew = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TDEW'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-            temperature = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TMPA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-
-        df = pd.concat([temperature_dew, temperature], axis=1)
-        autoval.utils.Preprocess(df).calculate_relative_humidity()
-        relative_humidity = df['RHMA'].to_frame()
-        relative_humidity.columns = [col + ' reanalysis' for col in relative_humidity.columns]
-        """
-    if 'TMPA' in variables:
-        if os.path.isfile('ERA20C_' + reanalysis_variables['TMPA'] + '.csv'):
-            temperature = pd.read_csv('ERA20C_' + reanalysis_variables['TMPA'] + '.csv', index_col=0)
-            temperature.index = pd.to_datetime(temperature.index)
-        else:
-            temperature = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TMPA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-
-        temperature = rascal.climate.Climatology(temperature).climatological_variables()
-        temperature = temperature - 273.15
-        temperature.columns = [col + ' reanalysis' for col in temperature.columns]
-
-    if 'WSPD' in variables or 'WDIR' in variables:
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['WSPD'][0] + '.csv'):
-            u_component = pd.read_csv('ERA20C_' + reanalysis_variables['WSPD'][0] + '.csv', index_col=0)
-            u_component.index = pd.to_datetime(u_component.index)
-        else:
-            u_component = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['WSPD'][0],
-                lat=lat,
-                lon=lon,
-                grouping='daily_mean'
-            )
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['WSPD'][1] + '.csv'):
-            v_component = pd.read_csv('ERA20C_' + reanalysis_variables['WSPD'][1] + '.csv', index_col=0)
-            v_component.index = pd.to_datetime(v_component.index)
-        else:
-            v_component = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['WSPD'][1],
-                lat=lat,
-                lon=lon,
-                grouping='daily_mean'
-            )
-
-    return precipitation, temperature, u_component, v_component, relative_humidity
-
-
-def get_predictor(path, variable_names, years, latitude_limits, longitude_limits, grouping):
-    """
-    Get the predictor data (usually reanalysis) and concatenate data of different variables but same domain along the
-    longitude axis.
-    Useful for PCA of vectorial magnitudes.
-    :param path: str. Path of the reanalysis data.
-    :param variable_names: list. Reanalysis code name of the variables.
-    :param years: list. Year to load.
-    :param latitude_limits:
-    :param longitude_limits:
-    :param grouping:
-    :return:
-    """
-
-    variables = []
-    final_lon = 0
-
-    for j, variable_name in enumerate(variable_names):
-
-        variable = get_data(
-            path,
-            variable_name,
-            dates=years,
-            grouping=grouping
-        )
-        variable = crop_domain(
-            variable,
-            lat_min=latitude_limits[0],
-            lat_max=latitude_limits[1],
-            lon_min=longitude_limits[0],
-            lon_max=longitude_limits[1]
-        )
-
-        original_name = [i for i in variable.data_vars][0]
-        variable = variable.rename({original_name: 'z'})
-
-        if j != 0:
-            # Get the differences between the first longitude and the rest of the list.
-            # Add 1 so the first element is not zero
-            longitude_diffs = [lon - variable['longitude'].values[0] + 1 for lon in variable['longitude'].values]
-            # Get the new longitudes to concatenate
-            new_longitude = longitude_diffs + final_lon
-            variable = variable.assign_coords(longitude=new_longitude)
-
-        final_lon = variable['longitude'].values[-1]
-        variables.append(variable)
-
-    variables = xr.combine_by_coords(variables)
-    variables["time"] = pd.to_datetime(variables["time"].values)
-
-    return variables
 
 
 def separate_concatenated_components(data):

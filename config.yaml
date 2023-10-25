@@ -27,19 +27,15 @@ plot_path: './plots/'
 
 # Stations
 stations:
-  - 'PN001002'
-  - 'PN001003'
   - 'navacerrada'
-
-# Station coordinates
-station_coordinates:
-  - [0]
+  # - 'PN001002'
+  # - 'PN001003'
 
 # Variable
 variables:
   - 'PCNR'
-  - 'TMAX'
-  - 'TMIN'
+  #- 'TMAX'
+  #- 'TMIN'
 
 # Reanalysis variables
 # ['variable acronym', 'pressure level']
@@ -73,14 +69,18 @@ predictor_lon_max: 1.5
 
 predictor_grouping: "12hour_1D_mean"
 
-predictor_of_variable:
+predictor_for_variable:
   TMPA: [ '925_129' ]
+  TMAX: [ '925_129' ]
+  TMIN: [ '925_129' ]
   WSPD: [ '925_129' ]
   PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
 
 # Secondary predictor
-secondary_predictor_of_variable:
+secondary_predictor_for_variable:
   TMPA: [ 'SURF_167']
+  TMAX: [ 'SURF_167']
+  TMIN: [ 'SURF_167']
   WSPD: [ 'SURF_165', 'SURF_166' ]
   PCNR: [ 'SURF_228']
 
@@ -102,8 +102,8 @@ pca_scaling: 1
 ########################################################################################################################
 # Analog method                                                                                                        #
 ########################################################################################################################
-analog_pool_size: 30
-weighted_mean_sample_size: 3
+analog_pool_size: [20, 30, 40, 50, 70, 100]
+weighted_mean_sample_size: [2, 3, 5, 10]
 distance: 'euclidean'
 
 validate: True
@@ -113,4 +113,4 @@ validation_window_type: 'centered'
 similarity_methods:
   - 'closest'
   - 'average'
-  - 'quantilemap'
+  #- 'quantilemap'

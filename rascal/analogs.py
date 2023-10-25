@@ -5,6 +5,7 @@ contact: alvaro@intermet.es
 """
 
 import os
+import tqdm
 import pickle
 
 import numpy as np
@@ -23,19 +24,20 @@ import rascal.utils
 config = rascal.utils.open_yaml('config.yaml')
 
 coordinate_names = ["time", "latitude", "longitude"]
-timer = True
+prompt_timer = True
 
 
 class Predictor:
     """
     Predictor class. This contains data about the predictor variable to use for the reconstruction.
     """
-    def __init__(self, paths, grouping, lat_min, lat_max, lon_min, lon_max, mosaic=True):
+    def __init__(self, paths, grouping, lat_min, lat_max, lon_min, lon_max, mosaic=True, number=None):
 
         self.data = rascal.utils.open_data(
             files_paths=paths,
             grouping=grouping,
-            domain=[lat_min, lat_max, lon_min, lon_max]
+            domain=[lat_min, lat_max, lon_min, lon_max],
+            number=number
         )
 
         if mosaic:
@@ -120,7 +122,7 @@ class Predictor:
 
         return anomalies
 
-    @rascal.utils.timer_func
+    @rascal.utils.timer_func(prompt=prompt_timer)
     def pcs(self, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
         """
         Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
@@ -220,7 +222,7 @@ class Analogs:
 
         return analog_distances, analog_dates
 
-    @rascal.utils.timer_func
+    @rascal.utils.timer_func(prompt=prompt_timer)
     def reconstruct(self, pool_size=None, method=None, sample_size=None, reference_variable=None):
         """
         Reconstruct a time series using the analog pool for each day.
@@ -400,7 +402,7 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
 
     training_dates = pd.to_datetime(training_set['time'].values)
 
-    for date in test_pcs['time'].values:
+    for date in tqdm.tqdm(test_pcs['time'].values, desc='Generating reconstruction'):
         # Delete values close the date to reconstruct
         validation_window = rascal.utils.get_validation_window(
             test_date=pd.to_datetime(date),
@@ -483,6 +485,9 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                 # Reanalysis data of the analog pool
                 reanalysis_pool = analog_dates.copy()
                 reanalysis_pool = reanalysis_pool.applymap(lambda x: np.squeeze(secondary_predictor.loc[x].values))
+                print("secondary_predictor", secondary_predictor)
+                print("reanalysis_pool", reanalysis_pool)
+                print("analog_dates", analog_dates)
                 secondary_predictor.index = pd.to_datetime(analog_dates.index)
                 reanalysis_pool['original'] = secondary_predictor.loc[pd.to_datetime(reanalysis_pool.index)]
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_percentile(

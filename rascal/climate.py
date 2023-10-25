@@ -24,6 +24,18 @@ class Climatology:
 
         daily_variables = pd.DataFrame()
 
+        if 'TMAX' in self._obj.columns:
+            tmax = self._obj['TMAX'].resample('D').max().rename('TMAX')
+            daily_variables = pd.concat([daily_variables, tmax], axis=1)
+
+        if 'TMIN' in self._obj.columns:
+            tmin = self._obj['TMIN'].resample('D').min().rename('TMIN')
+            daily_variables = pd.concat([daily_variables, tmin], axis=1)
+
+        if 'TMEAN' in self._obj.columns:
+            tmean = self._obj['TMEAN'].resample('D').mean().rename('TMEAN')
+            daily_variables = pd.concat([daily_variables, tmean], axis=1)
+
         if 'TMPA' in self._obj.columns:
             tmax = self._obj['TMPA'].resample('D').max().rename('TMAX')
             tmin = self._obj['TMPA'].resample('D').min().rename('TMIN')

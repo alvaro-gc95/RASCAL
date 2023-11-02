@@ -17,17 +17,20 @@ test_start: [1900, 1, 1]
 test_end: [2010, 12, 31]
 
 # Input paths
-reanalysis_path: '/mnt/disco2/data/NWP'
-observations_path: '/home/alvaro/data/stations/rmpnsg/'
+reanalysis_path: "/home/alvaro/data/NWP/era20c/"
+observations_path: "./data/observations/"
 
 # Output paths
 pca_path: './pca/'
-output_path: './output/'
-plot_path: './plots/'
+temporal_files_path: "./tmp/"
+output_path: "./output/"
+plot_path: "./plots/"
 
 # Stations
 stations:
-  - 'navacerrada'
+  - "segovia"
+  - "retiro"
+  #- 'navacerrada'
   # - 'PN001002'
   # - 'PN001003'
 
@@ -69,6 +72,12 @@ predictor_lon_max: 1.5
 
 predictor_grouping: "12hour_1D_mean"
 
+grouping_per_variable:
+  TMEAN: "1D_mean"
+  TMAX: "1D_max"
+  TMIN: "1D_min"
+  PCNR: "1D_sum"
+
 predictor_for_variable:
   TMPA: [ '925_129' ]
   TMAX: [ '925_129' ]
@@ -76,13 +85,16 @@ predictor_for_variable:
   WSPD: [ '925_129' ]
   PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
 
+overwrite_predictor: False
+
 # Secondary predictor
 secondary_predictor_for_variable:
   TMPA: [ 'SURF_167']
   TMAX: [ 'SURF_167']
   TMIN: [ 'SURF_167']
   WSPD: [ 'SURF_165', 'SURF_166' ]
-  PCNR: [ 'SURF_228']
+  PCNR: [ 'SURF_71.162', 'SURF_72.162' ] #[ 'SURF_228']
+
 
 ########################################################################################################################
 # Principal Component Analysis                                                                                         #
@@ -99,6 +111,8 @@ pca_scaling: 1
     # 1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
     # 2 : PCs are multiplied by the square-root of their eigenvalue.
 
+overwrite_pcs: False
+
 ########################################################################################################################
 # Analog method                                                                                                        #
 ########################################################################################################################
@@ -106,11 +120,10 @@ analog_pool_size: [20, 30, 40, 50, 70, 100]
 weighted_mean_sample_size: [2, 3, 5, 10]
 distance: 'euclidean'
 
-validate: True
 validation_window_size: 10
 validation_window_type: 'centered'
 
 similarity_methods:
   - 'closest'
   - 'average'
-  #- 'quantilemap'
+  - 'quantilemap'

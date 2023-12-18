@@ -65,7 +65,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
 
     observed_daily_data = rascal.utils.get_daily_stations(station, variable_name)
 
-    rascal.utils.get_station(station)
+    rascal.utils.get_station_meta(station)
 
     training_dates, test_dates, observed_dates = split_dates(
         training_start,
@@ -76,10 +76,10 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
     )
 
     # Get the reanalysis predictor data
-    predictors = rascal.utils.concatenate_reanalysis_data(
+    predictors = rascal.utils.get_predictor(
         era20c_path,
         predictor_variables,
-        dates=years,
+        years=years,
         latitude_limits=[gph_max_lat, gph_min_lat],
         longitude_limits=[gph_min_lon, gph_max_lon],
         grouping=None
@@ -137,7 +137,7 @@ def reconstruct_by_analogs(station, variable_name, reanalysis_dataset, similarit
                 + ' '.join(predictor_variables) + '_'
                 + str(initial_year) + str(final_year) + '.pkl'
         )
-        solver = rascal.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
+        solver = rascal.analogs.get_pca_solver(predictor_anomalies['z'], solver_name, overwrite=False)
         pcs = solver.pcs(npcs=config.get('n_components'), pcscaling=config.get('pca_scaling'))
 
         # Plot EOF maps

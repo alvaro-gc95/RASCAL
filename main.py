@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     # dw.request_reanalysis(dataset='era20c', parallelize=True)
 
-    station = rascal.utils.get_station(station)
+    station = rascal.utils.get_station_meta(station)
 
     for observed_variable in observed_variables:
 
@@ -99,10 +99,10 @@ if __name__ == '__main__':
             freq='1D')
 
         # Get the reanalysis predictor data
-        predictors = rascal.utils.concatenate_reanalysis_data(
+        predictors = rascal.utils.get_predictor(
             era20c_path,
             predictor_variables,
-            dates=years,
+            years=years,
             latitude_limits=[gph_max_lat, gph_min_lat],
             longitude_limits=[gph_min_lon, gph_max_lon],
             grouping=None
@@ -162,7 +162,7 @@ if __name__ == '__main__':
                         + ' '.join(predictor_variables) + '_'
                         + str(initial_year) + str(final_year) + '.pkl'
                 )
-                solver = rascal.analogs.get_pca(predictor_anomalies['z'], solver_name, overwrite=False)
+                solver = rascal.analogs.get_pca_solver(predictor_anomalies['z'], solver_name, overwrite=False)
                 pcs = solver.pcs(npcs=config.get('n_components'), pcscaling=config.get('pca_scaling'))
 
                 # Plot EOF maps

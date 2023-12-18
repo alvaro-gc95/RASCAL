@@ -1,57 +1,44 @@
-import datetime
+"""
+RASCAL utility functions
+contact: alvaro@intermet.es
+"""
 import itertools
 import os
+import yaml
 import pickle
-import re
+import typing
+import datetime
+import functools
+import rascal.climate
+import helpers.open_data
+import rascal.statistics
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import tqdm
 import xarray as xr
-import yaml
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-import rascal.climate
-
-
-era_variable_names = {
-    'TMPA': 't2m',
-    'TDEW': 'd2m',
-    'PCNR': 'tp',
-    'RHMA': 'r'
-}
-
-reanalysis_variables = {
-    'TMPA': 'SURF_167',
-    'PCNR': 'SURF_228',
-    'TDEW': 'SURF_168',
-    'WSPD': ['SURF_165', 'SURF_166'],
-    'RHMA': '950_157'
-}
+from time import time
 
 
-class ReanalysisSeries:
-    def __init__(self, path, variables, dates, lat, lon):
-        self.variables = variables
-        self.dates = dates
-        self.lat = lat
-        self.lon = lon
-
-        self.precipitation, self.temperature, self.u, self.v, self.relative_humidity = \
-            get_reanalysis(variables, path, dates, lat, lon)
+coordinate_names = ["time", "latitude", "longitude"]
+prompt_timer = True
 
 
 class Station:
-    def __init__(self, pandas_obj):
-        self.code = pandas_obj['code'].values[0]
-        self.name = pandas_obj['name'].values[0]
-        self.longitude = pandas_obj['longitude'].values[0]
-        self.latitude = pandas_obj['latitude'].values[0]
-        self.altitude = pandas_obj['altitude'].values[0]
+    def __init__(self, path):
+        meta = pd.read_csv(path + 'meta.csv')
+        self.path = path
+
+        self.code = meta['code'].values[0]
+        self.name = meta['name'].values[0]
+        self.longitude = meta['longitude'].values[0]
+        self.latitude = meta['latitude'].values[0]
+        self.altitude = meta['altitude'].values[0]
 
     def get_data(self, variable):
-        data = get_daily_stations(self.code, variable)
+        data = get_daily_data(self.path, variable)
         return data
 
     def get_gridpoint(self, grid_latitudes, grid_longitudes):
@@ -114,6 +101,163 @@ class Preprocess:
         self._obj['RHMA'] = (self._obj['E'] / self._obj['ES']) * 100
 
         del self._obj['E'], self._obj['ES']
+
+    def get_daily_variables(self):
+        """
+        Get relevant daily climatological variables as DataFrame: Maximum, minimum and mean temperature, maximum and
+        mean wind velocity, total solar radiation, total precipitation.
+        """
+
+        daily_variables = pd.DataFrame()
+
+        if 'TMAX' in self._obj.columns:
+            tmax = self._obj['TMAX'].resample('D').max().rename('TMAX')
+            daily_variables = pd.concat([daily_variables, tmax], axis=1)
+
+        if 'TMIN' in self._obj.columns:
+            tmin = self._obj['TMIN'].resample('D').min().rename('TMIN')
+            daily_variables = pd.concat([daily_variables, tmin], axis=1)
+
+        if 'TMEAN' in self._obj.columns:
+            tmean = self._obj['TMEAN'].resample('D').mean().rename('TMEAN')
+            daily_variables = pd.concat([daily_variables, tmean], axis=1)
+
+        if 'TMPA' in self._obj.columns:
+            tmax = self._obj['TMPA'].resample('D').max().rename('TMAX')
+            tmin = self._obj['TMPA'].resample('D').min().rename('TMIN')
+            tmean = self._obj['TMPA'].resample('D').mean().rename('TMEAN')
+            tamp = abs(tmax - tmin)
+            tamp = tamp.rename('TAMP')
+            daily_variables = pd.concat([daily_variables, tmax, tmin, tmean], axis=1)
+
+        if 'WSPD' in self._obj.columns:
+            # vmax = self._obj['WSPD'].resample('D').max().rename('VMAX')
+            vmean = self._obj['WSPD'].resample('D').mean().rename('VMEAN')
+            # daily_variables = pd.concat([daily_variables, vmax, vmean], axis=1)
+            daily_variables = pd.concat([daily_variables, vmean], axis=1)
+
+        if 'RADS01' in self._obj.columns:
+            rascal.utils.Preprocess(self._obj).clear_low_radiance()
+            rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
+            rads_total = rads_total.where(rads_total > 0, np.nan)
+            daily_variables = pd.concat([daily_variables, rads_total], axis=1)
+
+        if 'PCNR' in self._obj.columns:
+            ptot = self._obj['PCNR'].resample('D').sum().rename('PCNR')
+            daily_variables = pd.concat([daily_variables, ptot], axis=1)
+
+        if 'RHMA' in self._obj.columns:
+            rhmax = self._obj['RHMA'].resample('D').max().rename('RHMA')
+            daily_variables = pd.concat([daily_variables, rhmax], axis=1)
+
+        daily_variables.index = pd.to_datetime(daily_variables.index)
+
+        return daily_variables
+
+
+class Climatology:
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+
+    def daily_cycle(self, percentiles=None, to_series=False):
+        """
+        Calculate the percentiles of the monthly daily cycles
+        """
+        if percentiles is None:
+            percentiles = [0.1, 0.25, 0.5, 0.75, 0.9]
+
+        columns = [v + '_' + str(p) for v, p in itertools.product(self._obj.columns, percentiles)]
+        # Calculate the index of the monthly daily cycles (format = hour_month)
+        idx = [str(h) + '_' + str(m) for h, m in itertools.product(range(0, 24), range(1, 13))]
+
+        # Dataframe of climatological percentiles
+        climatology_percentiles = pd.DataFrame(index=idx, columns=columns)
+
+        # Calculate the climatological daily cycle for each month for each percentile
+        for variable, percentile in itertools.product(self._obj.columns, percentiles):
+            for month, month_dataset in self._obj.groupby(self._obj.index.month):
+                monthly_climatology = month_dataset[variable].groupby(month_dataset.index.hour).quantile(percentile)
+                for hour in monthly_climatology.index:
+                    climatology_percentiles.loc[str(hour) + '_' + str(month), variable + '_' + str(percentile)] = \
+                        monthly_climatology.loc[hour]
+
+        # transform the monthly daily cycles to time series
+        if to_series:
+            return table_to_series(climatology_percentiles, self._obj.index)
+        else:
+            return climatology_percentiles
+
+    def spatial_regression(self, related_site):
+        """
+        Get the correlation and linear regression with a reference station
+        """
+
+        # Calculate the index of tha monthly daily cycles (format = hour_month)
+        idx = [str(h) + '_' + str(m) for h, m in itertools.product(range(0, 24), range(1, 13))]
+        columns = [v + '_' + lr for v, lr in itertools.product(self._obj.columns, ['coef', 'intercept', 'correlation'])]
+        # Dataframe of climatological percentiles
+        regression = pd.DataFrame(index=idx, columns=columns)
+        residuals = pd.DataFrame(index=self._obj.index, columns=[c + '_residuals' for c in self._obj.columns])
+
+        # Group the data by month
+        for month, month_dataset in self._obj.groupby(self._obj.index.month):
+            # Fill the dataframe with the climatological daily cycle of each month
+            for hour, hour_dataset in month_dataset.groupby(month_dataset.index.hour):
+
+                # Select the data of the reference station by month and hour
+                related_site_hm = related_site.loc[
+                    (related_site.index.month == month) &
+                    (related_site.index.hour == hour)
+                ]
+                hour_dataset = hour_dataset
+
+                # Correlate the datasets
+                correlation = related_site_hm.corrwith(hour_dataset)
+
+                for variable in self._obj.columns:
+
+                    linear_regressor, regr_res = rascal.statistics.linear_regression(
+                        x=related_site_hm[variable].to_frame(),
+                        y=hour_dataset[variable].to_frame()
+                    )
+
+                    # Save the coefficient, intercept, and correlation for the hour and month
+                    regression.loc[str(hour) + '_' + str(month),
+                                   variable + '_coef'] = np.squeeze(linear_regressor.coef_)
+                    regression.loc[str(hour) + '_' + str(month),
+                                   variable + '_intercept'] = np.squeeze(linear_regressor.intercept_)
+                    regression.loc[str(hour) + '_' + str(month), variable + '_correlation'] = correlation[variable]
+
+                    residuals.loc[regr_res.index, variable + '_residuals'] = regr_res[variable].values
+
+        return regression, residuals
+
+    def mcp(self):
+        """
+        Wishlist
+        :return:
+        """
+        pass
+
+
+def timer_func(func: typing.Callable = None, prompt: bool = True) -> typing.Callable:
+    """
+    This function shows the execution time of  the function object passed
+    """
+
+    if func is None:
+        return functools.partial(timer_func, prompt=prompt)
+
+    @functools.wraps(func)
+    def wrap_func(*args, **kwargs):
+        t1 = time()
+        result = func(*args, **kwargs)
+        t2 = time()
+        if prompt:
+            print(f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s')
+        return result
+
+    return wrap_func
 
 
 def save_object(obj, filename):
@@ -196,8 +340,8 @@ def get_validation_window(test_date, dates, window_size, window_type='centered')
             final_date = test_date + datetime.timedelta(days=window_size)
 
         if window_type == 'centered':
-            initial_date = test_date - datetime.timedelta(days=np.ceil(window_size / 2))
-            final_date = test_date + datetime.timedelta(days=np.floor(window_size / 2))
+            initial_date = test_date - datetime.timedelta(days=int(np.ceil(window_size / 2)))
+            final_date = test_date + datetime.timedelta(days=int(np.floor(window_size / 2)))
 
         validation_window = pd.date_range(start=initial_date, end=final_date, freq='1D')
         validation_window = list(set(validation_window) & set(dates))
@@ -205,284 +349,141 @@ def get_validation_window(test_date, dates, window_size, window_type='centered')
         return validation_window
 
 
-def open_aemet(path, variable_name):
+def get_daily_data(path: str, variable: str):
+    observations = helpers.open_data.open_observations(path, [variable])
+    daily_observations = Preprocess(observations).get_daily_variables()
+    return daily_observations
+
+
+@timer_func(prompt=prompt_timer)
+def get_files(nwp_path, variables, dates, file_format):
     """
-    Open AEMET observations data format.
-    :param path: str. Path of the file.
-    :param variable_name: str.
-    :return:
-    """
-    variable_acronyms = {
-        'PCNR': 'Precipitacion',
-        'TMPA': 'Temperaturas',
-        'WSPD': 'viento',
-        'RHMA': 'Humedad'
-    }
-    # List of all the files in the directory of observations of the station
-    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-    # Search the desired observed variable file through all the files in the directory
-    for file, variable in itertools.product(files, [variable_acronyms[variable_name]]):
-        # Open if the file corresponds to the selected variable
-        if file.find(variable) != -1:
-            # Open the file
-            variable_df = pd.read_csv(path + file, encoding='latin3', delimiter=';')
-
-    new_variable_columns = []
-    original_variable_columns = []
-    variables = []
-
-    if variable_name != 'RHMA':
-
-        for col in variable_df.columns:
-            match = re.search(r"[A-Z]{1,4}\d{1,2}", col)
-            if match:
-                variable = re.search(r"[A-Z]{1,4}", col)
-                day = re.search(r"\d{1,2}", col)
-                original_variable_columns.append(match.group())
-                new_variable_columns.append(variable.group() + '_' + day.group())
-
-                variables.append(variable.group())
-
-        variable_df = variable_df.rename(columns=dict(zip(original_variable_columns, new_variable_columns)))
-        initial_date = datetime.datetime(variable_df['AÑO'].iloc[0], variable_df['MES'].iloc[0], 1)
-        final_date = datetime.datetime(variable_df['AÑO'].iloc[-1], variable_df['MES'].iloc[-1], 31)
-        dates = pd.date_range(start=initial_date, end=final_date, freq='1D')
-
-        variables = list(set(variables))
-        if 'MET' in variables:
-            variables.remove('MET')
-        new_variable_df = pd.DataFrame(index=dates, columns=variables)
-
-        for variable, date in itertools.product(variables, dates):
-
-            value = variable_df.loc[
-                (variable_df['AÑO'] == date.year) &
-                (variable_df['MES'] == date.month), variable + '_' + str(date.day)].values
-
-            if len(value) == 0:
-                value = np.nan
-            else:
-                value = value[0]
-
-            new_variable_df.loc[date, variable] = value
-
-    else:
-
-        hours = []
-
-        for col in variable_df.columns:
-            match = re.search(r"[A-Z]{1,4}\d{1,2}", col)
-            if match:
-                variable = re.search(r"[A-Z]{1,4}", col)
-                hour = re.search(r"\d{1,2}", col)
-                original_variable_columns.append(match.group())
-                new_variable_columns.append(variable.group() + '_' + hour.group())
-
-                hours.append(hour.group())
-                variables.append(variable.group())
-
-        hours = list(set(hours))
-
-        variable_df = variable_df.rename(columns=dict(zip(original_variable_columns, new_variable_columns)))
-
-        initial_date = datetime.datetime(
-            variable_df['AÑO'].iloc[0],
-            variable_df['MES'].iloc[0],
-            variable_df['DIA'].iloc[0]
-        )
-        final_date = datetime.datetime(
-            variable_df['AÑO'].iloc[-1],
-            variable_df['MES'].iloc[-1],
-            variable_df['DIA'].iloc[-1]
-        )
-        dates = pd.date_range(start=initial_date, end=final_date, freq='1H')
-        dates = [date for date in dates if str(date.hour).zfill(2) in hours]
-
-        variables = list(set(variables))
-        if 'MET' in variables:
-            variables.remove('MET')
-        new_variable_df = pd.DataFrame(index=dates, columns=variables)
-
-        for variable, date in itertools.product(variables, dates):
-
-            value = variable_df.loc[
-                (variable_df['AÑO'] == date.year) &
-                (variable_df['MES'] == date.month) &
-                (variable_df['DIA'] == date.day), variable + '_' + str(date.hour).zfill(2)].values
-
-            if len(value) == 0:
-                value = np.nan
-            else:
-                value = value[0]
-
-            new_variable_df.loc[date, variable] = value
-
-    if 'TMIN' in variables and 'TMAX' in variables:
-        new_variable_df['TMEAN'] = (new_variable_df['TMAX'] - new_variable_df['TMIN']) / 2
-        new_variable_df = new_variable_df / 10
-    if 'P' in variables:
-        new_variable_df = new_variable_df.rename(columns={'P': 'PCNR'})
-        new_variable_df = new_variable_df / 10
-    new_variable_df = new_variable_df.astype(np.float64)
-    if 'HU' in variables:
-        new_variable_df = new_variable_df.rename(columns={'HU': 'RHMA'})
-
-    return new_variable_df
-
-
-def open_observations(path: str, variables: list):
-    """
-    Get and rename all observational data from one directory as pandas DataFrame.
-    :param path: str. Path of the files to open.
-    :param variables: list. Acronyms as str of the variables to open.
-    """
-    # Declare an empty dataframe for the complete observations
-    data = pd.DataFrame()
-    # List of all the files in the directory of observations of the station
-    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-    print(files)
-    # Search the desired observed variable file through all the files in the directory
-    for file, variable in itertools.product(files, variables):
-        # Open if the file corresponds to the selected variable
-        if file.find(variable) != -1:
-            # Open the file
-            variable_data = pd.read_csv(path + file, index_col=0, encoding='latin3')
-            # Rename the values column
-            variable_data.columns.values[0] = variable
-            # Change the format of the index to datetime
-            variable_data.index = pd.to_datetime(variable_data.index)
-            # Add to the complete DataFrame
-            data = pd.concat([data, variable_data], axis=1)
-    # Check if the data exists
-    if data.empty:
-        print('Warning: Empty data. Files may not exist in ' + path)
-        exit()
-    else:
-        return data
-
-
-def get_daily_stations(station_code: str, variable: str):
-    """
-    Get observed data from RMPNG format or AEMET format. Transform the data to daily resolution and get the relevant
-    climatological variables.
-    :param station_code: str. Name of the station.
-    :param variable: str. Variable acronym.
-    :return daily_climatological_variables: DataFrame.
-    """
-
-    data_path = '/home/alvaro/data/'
-    observations_path = data_path + 'stations/rmpnsg/1h/'
-    aemet_path = data_path + 'stations/rmpnsg/1d/'
-
-    # Open all data from a station
-    if 'PN' in station_code:
-        observations = open_observations(observations_path + station_code + '/', [variable])
-        daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-    else:
-        print(aemet_path + station_code + '/', variable)
-        observations = open_aemet(aemet_path + station_code + '/', variable)
-        # Get variables in daily resolution
-        if variable == 'TMPA':
-            daily_climatological_variables = observations.resample('D').mean()
-        else:
-            daily_climatological_variables = rascal.climate.Climatology(observations).climatological_variables()
-
-    return daily_climatological_variables
-
-
-def open_grib(grib_paths, grouping=None, number=None):
-    """
-    Combine a list of grib files in one DataArray.
-    :param grib_paths: list. Paths of the grib file to open
-    :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
-    method=('sum', 'mean', 'min', 'max')
-    :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
-    :return combined: DataArray. All files concatenated in time
-    """
-
-    frequencies = {'hourly': "1H", 'daily': "1D", 'monthly': "1M", 'yearly': "1Y"}
-
-    # Declare a list where each element of the list is one selected grib file in array format
-    data_series = [0] * len(grib_paths)
-
-    # Open each file and fill the list
-    for i, grib_path in enumerate(grib_paths):
-
-        # First check if the file exists
-        if not os.path.isfile(grib_path):
-            print('     The file ' + grib_path + ' does not exist')
-
-        else:
-            # Load to xarray
-            ds = xr.load_dataset(grib_path, engine="cfgrib")
-            ds = ds.astype(np.float32)
-
-            # Group the data
-            if grouping is None:
-                ds_time = [date for date in pd.to_datetime(ds['time'].values) if date.hour == 12]
-                ds = ds.sel(time=ds_time)
-                ds = ds.resample(time='1D').mean()
-            else:
-
-                frequency, group_type = grouping.split('_')
-
-                if group_type == 'sum':
-                    ds = ds.resample(time=frequencies[frequency]).sum()
-                elif group_type == 'mean':
-                    ds = ds.resample(time=frequencies[frequency]).mean()
-                elif group_type == 'min':
-                    ds = ds.resample(time=frequencies[frequency]).min()
-                elif group_type == 'max':
-                    ds = ds.resample(time=frequencies[frequency]).max()
-                else:
-                    raise AttributeError('Grouping method (' + group_type + ') does not exists')
-
-            # Select ensemble member if possible
-            if number is not None:
-                ds = ds.sel(number=number).squeeze()
-
-            data_series[i] = ds
-
-    combined = xr.concat(data_series, dim='time')
-
-    return combined
-
-
-def get_grib(nwp_path, variable, dates, grouping=None, number=None):
-    """
-    Open a set of daily grib files.
+    Get all files
     :param nwp_path: str. Path to the grib files.
-    :param variable: str. Variable to open.
+    :param variables: list. Variables to open.
     :param dates: list. Dates to open.
-    :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
-    method=('sum', 'mean', 'min', 'max')
-    :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
-    :return data: array. All the daily data in a singular array.
+    :param file_format: str. File format
+    :return all_file_paths: dict. Lists of all data file paths for each variable
     """
 
     # List of al the grib files
-    all_file_paths = [np.nan] * len(dates)
+    all_file_paths = {}
+    for variable in variables:
+        # Get all file paths
+        file_paths = [np.nan] * len(dates)
+        for i, year in enumerate(dates):
+            file_name = (nwp_path + 'y_' + str(year) + '/' + str(year) + '_' + str(variable) + file_format)
+            # If the file exists, put the path in the list and save the correspondent date and hours
+            if os.path.isfile(file_name):
+                # Put the daily grib file name in the total file names array
+                file_paths[i] = file_name
+            else:
+                print(file_name + ' does not exist')
+        # Delete empty slots
+        file_paths = [item for item in file_paths if not (pd.isnull(item)) is True]
+        # Add files to the dictionary
+        all_file_paths[variable] = file_paths
 
-    for i, year in enumerate(dates):
-        # GRIB filename
-        file_name = (nwp_path + 'y_' + str(year) + '/' + str(year) + '_' + str(variable) + '.grib')
-        # If the file exists, put the path in the list and save the correspondent date and hours
-        if os.path.isfile(file_name):
-            # Put the daily grib file name in the total file names array
-            all_file_paths[i] = file_name
-        else:
-            print(file_name + ' does not exist')
+    return all_file_paths
 
-    # Delete empty slots
-    all_file_paths = [item for item in all_file_paths if not (pd.isnull(item)) is True]
 
-    # Open the files
-    if number is not None:
-        data = open_grib(all_file_paths, grouping, number)
+def group_data(ds, grouping=None):
+    """
+    Group data of a dataframe. It can group data in
+    By default grouping is None, then the central hour of the day is taken as the representative time of the day.
+    It possible to take individual hours, or different frequencies of timesteps based on the usual xarray syntaxis.
+    The grouping then is made on the selected frequency. groupings = ['sum', 'mean', 'min', 'max']
+    :param ds: xr.DataArray or xr.DataSet
+    :param grouping: str. 'hour(optional)_frequency_grouping'
+    :return: ds: grouped xr.DataArray or xr.DataSet
+    """
+
+    # The default configuration is to take the 12:00 of each day
+    if grouping is None:
+        grouping = "12hour_1D_mean"
+
+    if len(grouping.split('_')) == 3:
+        hour, frequency, group_type = grouping.split('_')
+    elif len(grouping.split('_')) == 2:
+        frequency, group_type = grouping.split('_')
+        hour = False
     else:
-        data = open_grib(all_file_paths, grouping)
+        raise AttributeError("Grouping str must have between 2 and 3 elements separated by _")
 
-    return data
+    if isinstance(hour, str):
+        hour = int(hour.replace("hour", ""))
+        ds_time = [date for date in pd.to_datetime(ds['time'].values) if date.hour == hour]
+        ds = ds.sel(time=ds_time)
+
+    if group_type == 'sum':
+        ds = ds.resample(time=frequency).sum()
+    elif group_type == 'mean':
+        ds = ds.resample(time=frequency).mean()
+    elif group_type == 'min':
+        ds = ds.resample(time=frequency).min()
+    elif group_type == 'max':
+        ds = ds.resample(time=frequency).max()
+    else:
+        raise AttributeError('Grouping method (' + group_type + ') does not exists')
+
+    return ds
+
+
+def clean_coordinates(ds):
+    """
+    Delete unidimensional coordinates that might produce merging problems
+    """
+    variables_not_coords = [variable for variable in ds.variables if variable not in coordinate_names]
+    variables_to_drop = [variable for variable in variables_not_coords if ds[variable].size == 1]
+    ds = ds.drop_vars(variables_to_drop).squeeze()
+    return ds
+
+
+@timer_func(prompt=prompt_timer)
+def open_data(files_paths, grouping=None, number=None, domain=None):
+    """
+    Combine a list of files (.grib or .nc usually) in one DataArray.
+    :param files_paths: list. Paths of the grib file to open
+    :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
+    method=('sum', 'mean', 'min', 'max')
+    :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)
+    :param domain: list [minimum latitude, maximum latitude, minimum longitude, maximum longitude]
+    :return combined: DataArray. All files concatenated in time
+    """
+    combined_ds = []
+    for variable, files in files_paths.items():
+        # Check if the file exists
+        for file_path in files:
+            if not os.path.isfile(file_path):
+                print('     The file ' + file_path + ' does not exist')
+                files.remove(file_path)
+        # Load to xarray
+        variable_ds = xr.open_mfdataset(files)
+        # Reduce memory usage
+        variable_ds = variable_ds.astype(np.float32)
+        # Clean unidimensional coordinates to avoid merging problems
+        variable_ds = clean_coordinates(variable_ds)
+        # Group the data
+        variable_ds = group_data(variable_ds, grouping)
+        # Select domain
+        if domain is not None:
+            variable_ds = crop_domain(
+                variable_ds,
+                lat_min=domain[0],
+                lat_max=domain[1],
+                lon_min=domain[2],
+                lon_max=domain[3]
+            )
+        # Select ensemble member if possible
+        if number is not None:
+            variable_ds = variable_ds.sel(number=number).squeeze()
+            variable_ds = variable_ds.drop_vars("number")
+
+        combined_ds.append(variable_ds)
+
+    combined_ds = xr.merge(combined_ds)
+
+    return combined_ds
 
 
 def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, point_latitude):
@@ -503,295 +504,61 @@ def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, poin
     return ilat, ilon
 
 
-def get_gridpoint_series(data, lon, lat):
+def crop_domain(data, lat_min, lat_max, lon_min, lon_max, grid_buffer=None):
     """
-    Find the data in a dataset gridpoint
-    :param data: DataSet. Contains "latitude" and "longitude" as dimensions.
-    :param lon: float.
-    :param lat: float.
-    :return data: DataSet. Original dataset in the nearest gridpoint to the selected latitude and longitude.
-    """
-    grid_latitudes = data['latitude'].values
-    grid_longitudes = data['longitude'].values
-
-    ilat, ilon = get_nearest_gridpoint(
-        grid_latitudes=grid_latitudes,
-        grid_longitudes=grid_longitudes,
-        point_longitude=lon,
-        point_latitude=lat
-    )
-
-    data = data.isel(latitude=ilat, longitude=ilon).squeeze()
-
-    return data
-
-
-def crop_domain(data, latitude_limits, longitude_limits):
-    """
-    Crop dataset domain.
+    Crop dataset domain. Works with regular grids. Irregular grids are on wishlist.
     :param data: DataSet.
-    :param latitude_limits: list = [minimum, maximum]
-    :param longitude_limits:  list = [minimum, maximum]
+    :param lat_min: float.
+    :param lat_max: float.
+    :param lon_min: float.
+    :param lon_max: float.
+    :param grid_buffer: list. [x buffer (int), y buffer (int)]. Number of gridpoint to expand outside the real closest
+    gridpoint in the margins.
     :return data: DataSet. Original dataset cropped.
     """
 
-    min_lat, max_lat = latitude_limits
-    min_lon, max_lon = longitude_limits
+    if grid_buffer is None:
+        grid_buffer = [0, 0]
 
     grid_latitudes = data['latitude'].values
     grid_longitudes = data['longitude'].values
 
+    # Get index of the closest grid points
     i_min_lat, i_min_lon = get_nearest_gridpoint(
         grid_latitudes=grid_latitudes,
         grid_longitudes=grid_longitudes,
-        point_longitude=min_lon,
-        point_latitude=min_lat
+        point_longitude=lon_min,
+        point_latitude=lat_min
     )
     i_max_lat, i_max_lon = get_nearest_gridpoint(
         grid_latitudes=grid_latitudes,
         grid_longitudes=grid_longitudes,
-        point_longitude=max_lon,
-        point_latitude=max_lat
+        point_longitude=lon_max,
+        point_latitude=lat_max
     )
 
-    data = data.isel(latitude=slice(i_min_lat, i_max_lat), longitude=slice(i_min_lon, i_max_lon))
+    # Abb buffer grid points
+    if i_min_lat != len(grid_latitudes):
+        i_min_lat = i_min_lat + grid_buffer[1]
+    if i_max_lat != 0:
+        i_max_lat = i_max_lat - grid_buffer[1]
+
+    if i_min_lon != 0:
+        i_min_lon = i_min_lon - grid_buffer[0]
+    if i_max_lon != len(grid_longitudes):
+        i_max_lon = i_max_lon + grid_buffer[0]
+
+    # Crop domain to a point, line or 2D grid
+    if i_max_lat == i_min_lat and i_max_lon != i_min_lon:
+        data = data.isel(latitude=i_max_lat, longitude=slice(i_min_lon, i_max_lon))
+    elif i_max_lat != i_min_lat and i_max_lon == i_min_lon:
+        data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=i_max_lon)
+    elif i_max_lat == i_min_lat and i_max_lon == i_min_lon:
+        data = data.isel(latitude=i_max_lat, longitude=i_max_lon)
+    else:
+        data = data.isel(latitude=slice(i_max_lat, i_min_lat), longitude=slice(i_min_lon, i_max_lon))
 
     return data
-
-
-def reanalysis_ensemble_to_dataframe(path, dates, variable, lat, lon, grouping):
-    variable_series = []
-
-    for ensemble_number in range(9):
-        ensemble_member = reanalysis_to_dataframe(path, dates, variable, lat, lon, grouping, ensemble_number)
-        variable_series.append(ensemble_member)
-
-    variable_series = pd.concat(variable_series, axis=1)
-    variable_series.index = pd.to_datetime(variable_series.index)
-    variable_series.to_csv('ERA20CM_' + variable + '.csv')
-
-    return variable_series
-
-
-def reanalysis_to_dataframe(path, dates, variable, lat, lon, grouping, ensemble_number=None):
-    variable_series = []
-
-    for year in tqdm.tqdm(dates, desc='   Opening grib files'):
-        # Get the grib data for each year
-        year_variable = get_grib(
-            path,
-            variable,
-            dates=[year],
-            grouping=grouping,
-            number=ensemble_number
-        )
-
-        # Get data in the grid point
-        year_variable = get_gridpoint_series(
-            year_variable,
-            lat=lat,
-            lon=lon
-        )
-        print(year_variable)
-        year_variable = year_variable.to_dataframe()
-
-        print(year_variable)
-        # Get the netcdf name of the variable
-        level, variable_reanalysis_code = variable.split('_')
-        variable_code = [code for code, code_reanalysis in reanalysis_variables.items()
-                         if variable_reanalysis_code in code_reanalysis][0]
-        variable_netcdf_name = era_variable_names[variable_code]
-
-        # Select only the variable values
-        year_variable = year_variable[variable_netcdf_name]
-
-        if ensemble_number is None:
-            year_variable = year_variable.rename(variable_code)
-        else:
-            year_variable = year_variable.rename({variable_netcdf_name: variable_code + '_' + str(ensemble_number)})
-
-        variable_series.append(year_variable)
-
-    variable_series = pd.concat(variable_series, axis=0)
-
-    # Save the dataframe
-    variable_series.index = pd.to_datetime(variable_series.index)
-
-    if ensemble_number is None:
-        variable_series.to_csv('ERA20C_' + variable + '.csv')
-    else:
-        variable_series.to_csv('ERA20C_' + variable + '_' + str(ensemble_number) + '.csv')
-
-    return variable_series
-
-
-def get_reanalysis(variables, reanalysis_path, dates, lat, lon):
-    precipitation = None
-    temperature = None
-    u_component = None
-    v_component = None
-    relative_humidity = None
-
-    # Get reanalysis data in the gridpoint
-    if 'PCNR' in variables:
-        if os.path.isfile('ERA20CM_' + reanalysis_variables['PCNR'] + '.csv'):
-            precipitation = pd.read_csv('ERA20CM_' + reanalysis_variables['PCNR'] + '.csv', index_col=0)
-            precipitation.index = pd.to_datetime(precipitation.index)
-        else:
-            reanalysis_ensemble_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['PCNR'],
-                lat=lat,
-                lon=lon,
-                grouping='daily_sum'
-            )
-        precipitation.columns = [col + ' reanalysis' for col in precipitation.columns]
-        precipitation = precipitation * 1000
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['RHMA'] + '.csv'):
-            relative_humidity = pd.read_csv('ERA20C_' + reanalysis_variables['RHMA'] + '.csv', index_col=0)
-            relative_humidity.index = pd.to_datetime(relative_humidity.index)
-        else:
-
-            relative_humidity = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['RHMA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-        print(relative_humidity)
-        relative_humidity = rascal.climate.Climatology(relative_humidity).climatological_variables()
-        print(relative_humidity)
-        relative_humidity.columns = [col + ' reanalysis' for col in relative_humidity.columns]
-        print(relative_humidity)
-        """
-        if (os.path.isfile('ERA20C_' + reanalysis_variables['TDEW'] + '.csv') and
-                os.path.isfile('ERA20C_' + reanalysis_variables['TMPA'] + '.csv')):
-
-            temperature_dew = pd.read_csv('ERA20C_' + reanalysis_variables['TDEW'] + '.csv', index_col=0)
-            temperature_dew.index = pd.to_datetime(temperature_dew.index)
-
-            temperature = pd.read_csv('ERA20C_' + reanalysis_variables['TMPA'] + '.csv', index_col=0)
-            temperature.index = pd.to_datetime(temperature.index)
-
-        else:
-            temperature_dew = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TDEW'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-            temperature = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TMPA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-
-        df = pd.concat([temperature_dew, temperature], axis=1)
-        autoval.utils.Preprocess(df).calculate_relative_humidity()
-        relative_humidity = df['RHMA'].to_frame()
-        relative_humidity.columns = [col + ' reanalysis' for col in relative_humidity.columns]
-        """
-    if 'TMPA' in variables:
-        if os.path.isfile('ERA20C_' + reanalysis_variables['TMPA'] + '.csv'):
-            temperature = pd.read_csv('ERA20C_' + reanalysis_variables['TMPA'] + '.csv', index_col=0)
-            temperature.index = pd.to_datetime(temperature.index)
-        else:
-            temperature = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['TMPA'],
-                lat=lat,
-                lon=lon,
-                grouping=None
-            )
-
-        temperature = rascal.climate.Climatology(temperature).climatological_variables()
-        temperature = temperature - 273.15
-        temperature.columns = [col + ' reanalysis' for col in temperature.columns]
-
-    if 'WSPD' in variables or 'WDIR' in variables:
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['WSPD'][0] + '.csv'):
-            u_component = pd.read_csv('ERA20C_' + reanalysis_variables['WSPD'][0] + '.csv', index_col=0)
-            u_component.index = pd.to_datetime(u_component.index)
-        else:
-            u_component = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['WSPD'][0],
-                lat=lat,
-                lon=lon,
-                grouping='daily_mean'
-            )
-
-        if os.path.isfile('ERA20C_' + reanalysis_variables['WSPD'][1] + '.csv'):
-            v_component = pd.read_csv('ERA20C_' + reanalysis_variables['WSPD'][1] + '.csv', index_col=0)
-            v_component.index = pd.to_datetime(v_component.index)
-        else:
-            v_component = reanalysis_to_dataframe(
-                path=reanalysis_path,
-                dates=dates,
-                variable=reanalysis_variables['WSPD'][1],
-                lat=lat,
-                lon=lon,
-                grouping='daily_mean'
-            )
-
-    return precipitation, temperature, u_component, v_component, relative_humidity
-
-
-def concatenate_reanalysis_data(path, variable_names, dates, latitude_limits, longitude_limits, grouping):
-    """
-    Get reanalysis data and concatenate data of different variables but same domain along the longitude axis.
-    Useful for PCA of vectorial magnitudes.
-    :param path: str. Path of the reanalysis data.
-    :param variable_names: list. Reanalysis code name of the variables.
-    :param dates: list. Year to load.
-    :param latitude_limits:
-    :param longitude_limits:
-    :param grouping:
-    :return:
-    """
-
-    variables = []
-    final_lon = 0
-
-    for j, variable_name in enumerate(variable_names):
-
-        variable = get_grib(
-            path,
-            variable_name,
-            dates=dates,
-            grouping=grouping
-        )
-        variable = crop_domain(variable, latitude_limits=latitude_limits, longitude_limits=longitude_limits)
-
-        original_name = [i for i in variable.data_vars][0]
-        variable = variable.rename({original_name: 'z'})
-
-        if j != 0:
-            # Get the differences between the first longitude and the rest of the list.
-            # Add 1 so the first element is not zero
-            longitude_diffs = [lon - variable['longitude'].values[0] + 1 for lon in variable['longitude'].values]
-            # Get the new longitudes to concatenate
-            new_longitude = longitude_diffs + final_lon
-            variable = variable.assign_coords(longitude=new_longitude)
-
-        final_lon = variable['longitude'].values[-1]
-        variables.append(variable)
-
-    variables = xr.combine_by_coords(variables)
-
-    return variables
 
 
 def separate_concatenated_components(data):
@@ -859,7 +626,7 @@ def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series,
     return lower_adjacent_value
 
 
-def get_station(code):
+def get_station_meta(code):
     """
     Get Station latitude, longitude, altitude and full name
     :param code: str. Code of the station.
@@ -872,5 +639,16 @@ def get_station(code):
     return station_data
 
 
+def table_to_series(df: pd.DataFrame, new_index):
+    """
+    Transform a table of hourly values per month to a time series.
+    """
 
+    climatology_series = pd.DataFrame(index=new_index, columns=df.columns)
 
+    for variable in df.columns:
+        for month, month_dataset in climatology_series.groupby(climatology_series.index.month):
+            for hour, hourly_dataset in month_dataset.groupby(month_dataset.index.hour):
+                climatology_series.loc[hourly_dataset.index, variable] = df.loc[str(hour) + '_' + str(month), variable]
+
+    return climatology_series

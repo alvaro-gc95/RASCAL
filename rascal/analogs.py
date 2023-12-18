@@ -5,20 +5,309 @@ contact: alvaro@intermet.es
 """
 
 import os
+import tqdm
 import pickle
 
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+
 from eofs.xarray import Eof
+from dask.diagnostics import ProgressBar
 from scipy.stats import percentileofscore
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import rascal.utils
 
-config = rascal.utils.open_yaml('config.yaml')
+coordinate_names = ["time", "latitude", "longitude"]
+prompt_timer = True
+
+
+class Predictor:
+    """
+    Predictor class. This contains data about the predictor variable to use for the reconstruction.
+    """
+
+    def __init__(self, paths, grouping, lat_min, lat_max, lon_min, lon_max, mosaic=True, number=None):
+
+        self.data = rascal.utils.open_data(
+            files_paths=paths,
+            grouping=grouping,
+            domain=[lat_min, lat_max, lon_min, lon_max],
+            number=number
+        )
+
+        if mosaic:
+            self.data = self.to_mosaic()
+
+    def crop(self, lat_min, lat_max, lon_min, lon_max):
+        """
+        Crop the domain of the dataframe
+        :param lat_min: float.
+        :param lat_max: float.
+        :param lon_min: float.
+        :param lon_max: float.
+        """
+
+        self.data = rascal.utils.crop_domain(
+            self.data,
+            lat_min=lat_min,
+            lat_max=lat_max,
+            lon_min=lon_min,
+            lon_max=lon_max
+        )
+
+        return self.data
+
+    def to_mosaic(self):
+        """
+        To use various simultaneous predictors or a vectorial variable, concatenate the variables along the longitude
+        axis to obtain a single compound variable, easier to use when performing PCA.
+        """
+
+        compound_predictor = []
+        compound_predictor_name = '_'.join(self.data.data_vars)
+        final_lon = 0
+
+        for j, variable_name in enumerate(self.data.data_vars):
+
+            variable_j = self.data.rename({variable_name: compound_predictor_name})[compound_predictor_name]
+
+            if j != 0:
+                # Get the differences between the first longitude and the rest of the list.
+                # Add 1 so the first element is not zero
+                longitude_diffs = [
+                    lon - variable_j['longitude'].values[0] + 1 for lon in variable_j['longitude'].values
+                ]
+                # Get the new longitudes to concatenate
+                new_longitude = longitude_diffs + final_lon
+                variable_j = variable_j.assign_coords(longitude=new_longitude)
+
+            final_lon = variable_j['longitude'].values[-1]
+            compound_predictor.append(variable_j)
+
+        compound_predictor = xr.combine_by_coords(compound_predictor)
+        compound_predictor["time"] = pd.to_datetime(compound_predictor["time"].values)
+        compound_predictor = compound_predictor.to_array().squeeze()
+
+        self.data = compound_predictor
+        return compound_predictor
+
+    def module(self):
+        """
+        Get the module of the predictor variables as if they were components of a vector.
+        :return:
+        """
+        vector_module = np.sqrt((self.data ** 2).to_array().sum("variable"))
+        self.data = vector_module
+        return self
+
+    def anomalies(self, seasons=None, standardize=None):
+        """
+        Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
+        contained within it.
+        :param seasons: list. Months of the season. Default = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+        :param standardize: bool. Standardize anomalies. Default = True
+        :return: anomalies. xr.DataSet. dims = [time, latitude, longitude, season]
+        """
+
+        if seasons is None:
+            seasons = [[int(m) for m in range(1, 13)]]
+        if standardize is None:
+            standardize = True
+
+        # Get the seasonal anomalies of the predictor field
+        anomalies = []
+        for i, season in enumerate(seasons):
+            season_dates = [date for date in pd.to_datetime(self.data["time"].values) if date.month in season]
+            seasonal_predictors = self.data.sel(time=season_dates)
+            seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
+            seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
+            anomalies.append(seasonal_anomalies)
+        anomalies = xr.merge(anomalies)
+
+        return anomalies
+
+    @rascal.utils.timer_func(prompt=prompt_timer)
+    def pcs(self, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
+        """
+        Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
+        the analysis does not have to be performed every time.
+        :param npcs: int. Number of components.
+        :param seasons: list. List of list of months of every season.
+        :param standardize: bool. If True, the anomalies used in the PCA are standardized.
+        :param pcscaling: int. Set the scaling of the PCs used to compute covariance. The following values are accepted:
+            0 : Un-scaled PCs.
+            1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
+            2 : PCs are multiplied by the square-root of their eigenvalue.
+        :param overwrite: bool. Default = False. If True recalculate the PCA and overwrite the pickle with the PCA
+        results.
+        """
+
+        if pcscaling is None:
+            pcscaling = 1
+        if overwrite is None:
+            overwrite = False
+
+        anomalies = self.anomalies(seasons=seasons, standardize=standardize)
+        with ProgressBar():
+            anomalies = anomalies.compute()
+
+        pcs = []
+        for i, season in enumerate(seasons):
+
+            # Filename to the PCA solver object that contains tha analysis information
+            initial_year = str(int(pd.to_datetime(anomalies["time"].values[0]).year))
+            final_year = str(int(pd.to_datetime(anomalies["time"].values[-1]).year))
+            pca_solver_filename = (
+                    './pca/' +
+                    ''.join([str(s).zfill(2) for s in season]) + '_'
+                    + str(initial_year) + str(final_year) + '.pkl'
+            )
+
+            if overwrite:
+                seasonal_anomalies = anomalies.sel(season=i).dropna(dim="time")
+                seasonal_anomalies = seasonal_anomalies.to_array().squeeze(dim="variable")
+                pcs_solver = rascal.analogs.get_pca_solver(seasonal_anomalies, pca_solver_filename, overwrite=overwrite)
+            else:
+                # Avoid calculating anomalies if the pca solver already exists and overwrite == False
+                pcs_solver = rascal.analogs.get_pca_solver(None, pca_solver_filename, overwrite=overwrite)
+
+            seasonal_pcs = pcs_solver.pcs(npcs=npcs, pcscaling=pcscaling)
+            seasonal_pcs = seasonal_pcs.expand_dims({"season": [i]})
+            pcs.append(seasonal_pcs)
+        pcs = xr.merge(pcs)
+
+        return pcs
+
+
+class Analogs:
+    """
+    Store analog days information
+    """
+
+    def __init__(self, pcs, observations, dates):
+        self.pcs = pcs
+        self.dates = dates
+        self.observations = observations
+
+    def get_pool(self, size=None, vw_size=None, vw_type=None, distance=None):
+        """
+        Get the pool of 'size' closest neighbors to each day
+        :param size: int. Number of neighbors in the pool.
+        :param vw_size: int. Validation window size. How many data points around each point is ignored to validate the
+            reconstruction.
+        :param vw_type: str. Type of validation window. Options:
+            - forward: The original date is the last date of the window.
+            - backward: The original date is the firs date of the window.
+            - centered: The original date is in the center of the window.
+        :param distance: str. Metric to determine the distance between points in the PCs space. Options:
+            - euclidean
+            - mahalanobis
+        :return analog_dates, analog_distances: pd.DataFrame, pd.DataFrame. 'analog_dates' contains the dates of the
+            analogs in the pool for each day. 'analog_distances' contains the  distances in the PCs space of each
+            analog to the original day.
+        """
+
+        if size is None:
+            size = 100
+
+        analog_distances = []
+        analog_dates = []
+        for season in self.pcs["season"].values:
+
+            seasonal_pcs = self.pcs.sel(season=season).dropna(dim="time").to_array().squeeze(dim="variable")
+
+            # Split in seasonal test and training dates
+            seasonal_training_dates = pd.to_datetime(seasonal_pcs["time"].values)
+            seasonal_test_dates = sorted(list(set(seasonal_training_dates) & set(pd.to_datetime(self.dates))))
+            seasonal_observed_dates = sorted(list(
+                set(seasonal_training_dates) &
+                set(rascal.utils.clean_dataset(self.observations).index)
+            ))
+
+            if len(seasonal_observed_dates) == 0:
+                print("Warning: There is not any observational record during the training period")
+
+            seasonal_analog_distances, seasonal_analog_dates = get_analog_pool(
+                training_set=seasonal_pcs.sel(time=seasonal_observed_dates),
+                test_pcs=seasonal_pcs.sel(time=seasonal_test_dates),
+                pool_size=size,
+                vw_size=vw_size,
+                vw_type=vw_type,
+                distance=distance
+            )
+
+            analog_distances.append(seasonal_analog_distances)
+            analog_dates.append(seasonal_analog_dates)
+
+        analog_distances = pd.concat(analog_distances, axis=0)
+        analog_dates = pd.concat(analog_dates, axis=0)
+
+        analog_distances = analog_distances.sort_index()
+        analog_dates = analog_dates.sort_index()
+
+        return analog_distances, analog_dates
+
+    @rascal.utils.timer_func(prompt=prompt_timer)
+    def reconstruct(
+            self,
+            pool_size=None,
+            method=None,
+            sample_size=None,
+            reference_variable=None,
+            vw_size=None,
+            vw_type=None,
+            distance=None
+    ):
+        """
+        Reconstruct a time series using the analog pool for each day.
+        :param pool_size: int. Size of the analog pool for each day.
+        :param method: str. Similarity method to select the best analog of the pool. Options are:
+            - 'closest': (Selected by default) Select the closest analog in the PCs space
+            - 'average': Calculate the weighted average of the 'sample_size' closest analogs in the PCs space.
+            - 'quantilemap': Select the analog that represent the same quantile in the observations pool that another
+                   reference variable.
+        :param sample_size: int. Number of analogs to average in the 'average' method
+        :param reference_variable: Predictor object. Time series of a variable to use as reference in 'quantilemap'
+                :param vw_size: int. Validation window size. How many data points around each point is ignored to validate the
+            reconstruction.
+        :param vw_type: str. Type of validation window. Options:
+            - forward: The original date is the last date of the window.
+            - backward: The original date is the firs date of the window.
+            - centered: The original date is in the center of the window.
+        :param distance: str. Metric to determine the distance between points in the PCs space. Options:
+            - euclidean
+            - mahalanobis
+        :return reconstruction: pd.DataFrame.
+        """
+
+        if pool_size is None:
+            pool_size = 100
+        if method is None:
+            method = "closest"
+        if vw_size is not None and vw_size < 10:
+            print("Warning: Validation window size = " + str(vw_size) + " is < 10 data points. To cross validate " +
+                  "the series, a size>=10 is recommended")
+
+        analog_distances, analog_dates = self.get_pool(
+            size=pool_size,
+            vw_size=vw_size,
+            vw_type=vw_type,
+            distance=distance
+        )
+        reconstruction = reconstruct_by_analogs(
+            observed_data=self.observations,
+            analog_dates=analog_dates,
+            similarity_method=method,
+            analog_distances=analog_distances,
+            sample_size=sample_size,
+            reference_variable=reference_variable
+        )
+
+        return reconstruction
 
 
 def calculate_anomalies(data_array: xr.DataArray, standardize=False):
@@ -27,17 +316,15 @@ def calculate_anomalies(data_array: xr.DataArray, standardize=False):
     :param standardize: bool. Default=False. If True divide the anomalies by its standard deviation.
     :return anomalies: DataArray.
     """
-
     mean = data_array.mean(dim='time')
     anomalies = data_array - mean
-
     if standardize:
         anomalies = anomalies / anomalies.std(dim='time')
 
     return anomalies
 
 
-def get_pca(data_array, file_name, overwrite=True):
+def get_pca_solver(data_array, file_name, overwrite=True):
     """
     Do Principal Components Analysis and save the solver as object
     :param data_array: DataArray. Field to analyze.
@@ -131,7 +418,7 @@ def plot_pca(file_name, n_components, vectorial=False):
         plt.savefig(file_name[:-3] + '.png')
 
 
-def calculate_distances(origin, points, distance='euclidean', **kwargs):
+def calculate_distances(origin, points, distance='euclidean'):
     """
     Calculate distance between one origin point and a set of points.
     :param origin: DataArray.
@@ -149,35 +436,52 @@ def calculate_distances(origin, points, distance='euclidean', **kwargs):
         left = np.dot(y_mu, inv_covmat)
         mahal = np.dot(left, y_mu.T)
         return mahal.diagonal()
-        pass
     else:
         raise AttributeError('Error: ' + distance + ' distance does not exist')
 
     return distances
 
 
-def get_analog_pool(training_set, test_pcs, pool_size=100):
+def get_analog_pool(training_set, test_pcs, pool_size=100, vw_size=10, vw_type="centered", distance="euclidean"):
     """
     Get a pool of analogues calculating the N closest neighbours in the PCs space.
     :param training_set: DataArray. PCs of possible analogues.
     :param test_pcs: DataArray. PCs of the day to reconstruct.
     :param pool_size: int. N number of analogues.
+    :param vw_size: int. Validation window size. How many data points around each point is ignored to validate the
+        reconstruction.
+    :param vw_type: str. Type of validation window. Options:
+        forward: The original date is the last date of the window.
+        backward: The original date is the firs date of the window.
+        centered: The original date is in the center of the window.
+    :param distance: str. Metric to determine the distance between points in the PCs space. Options:
+        - euclidean
+        - mahalanobis
     :return analog_distances: DataFrame. Distances to the day to reconstruct of the N closes analogues.
     :return analog_dates: DataFrame. Dates of the N closest analogues.
     """
+
+    if pool_size is None:
+        pool_size = 100
+    if vw_size is None:
+        vw_size = 10
+    if vw_type is None:
+        vw_type = "centered"
+    if distance is None:
+        distance = "euclidean"
 
     analog_dates = pd.DataFrame(index=pd.to_datetime(test_pcs['time'].values), columns=range(pool_size))
     analog_distances = pd.DataFrame(index=pd.to_datetime(test_pcs['time'].values), columns=range(pool_size))
 
     training_dates = pd.to_datetime(training_set['time'].values)
 
-    for date in test_pcs['time'].values:
+    for date in tqdm.tqdm(test_pcs['time'].values, desc='Generating reconstruction'):
         # Delete values close the date to reconstruct
         validation_window = rascal.utils.get_validation_window(
             test_date=pd.to_datetime(date),
             dates=pd.to_datetime(test_pcs['time'].values),
-            window_size=config.get('validation_window_size'),
-            window_type=config.get('validation_window_type')
+            window_size=vw_size,
+            window_type=vw_type
         )
         validation_window = pd.to_datetime(validation_window)
         validation_dates = sorted(list(set(training_dates) - set(validation_window)))
@@ -186,7 +490,7 @@ def get_analog_pool(training_set, test_pcs, pool_size=100):
         distances = calculate_distances(
             origin=test_pcs.sel(time=date),
             points=training_set.sel(time=validation_dates),
-            distance=config.get('distance')
+            distance=distance
         )
 
         # Sort the distances to find the closest days in the PC space
@@ -207,7 +511,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
     Reconstruct time series
     :param observed_data: pd.DataFrame. All observations.
     :param analog_dates: pd.DataFrame. Dates in the analog pool for each date to reconstruct.
-    :param similarity_method: str. Reconstruction method. Options = ('closet', 'pondered', 'percentile')
+    :param similarity_method: str. Reconstruction method. Options = ('closet', 'pondered', 'quantilemap')
     :param kwargs:
     :return:
     """
@@ -216,7 +520,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
     min_band_columns = [c + ' min band' for c in observed_data.columns]
     max_band_columns = [c + ' max band' for c in observed_data.columns]
 
-    # Create the rascal empty dataframe
+    # Create the empty dataframe for the reconstructed values
     reconstruction_columns = min_band_columns + max_band_columns + list(observed_data.columns)
     reconstructed_data = pd.DataFrame(index=analog_dates.index, columns=reconstruction_columns)
 
@@ -232,9 +536,9 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
             )
 
         elif similarity_method == 'average':
-            if 'sample_size' not in kwargs.keys():
+            if "sample_size" not in kwargs.keys() or "sample_size" is None:
                 raise AttributeError('Missing argument: sample_size')
-            elif 'analog_distances' not in kwargs.keys():
+            elif "analog_distances" not in kwargs.keys() or "sample_size" is None:
                 raise AttributeError('Missing argument: analog_distances')
             else:
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_weighted_average(
@@ -243,20 +547,19 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                     sample_size=kwargs['sample_size']
                 )
 
-        elif similarity_method == 'percentiles':
+        elif similarity_method == 'quantilemap':
             if 'reference_variable' not in kwargs.keys():
                 raise AttributeError('Missing argument: reference_variable')
             else:
+                # Convert the input predictor object to dataframe
+                secondary_predictor = kwargs["reference_variable"]
+                secondary_predictor = secondary_predictor.data.to_dataframe().drop(["latitude", "longitude"], axis=1)
 
                 # Reanalysis data of the analog pool
                 reanalysis_pool = analog_dates.copy()
-                reanalysis_pool = reanalysis_pool.apply(
-                    lambda x: kwargs['reference_variable'][variable + ' reanalysis'].loc[x].values
-                )
-                kwargs['reference_variable'].index = pd.to_datetime(kwargs['reference_variable'].index)
-                reanalysis_pool['original'] = kwargs['reference_variable'][variable + ' reanalysis'].loc[
-                    pd.to_datetime(reanalysis_pool.index)]
-
+                reanalysis_pool = reanalysis_pool.applymap(lambda x: np.squeeze(secondary_predictor.loc[x].values))
+                secondary_predictor.index = pd.to_datetime(analog_dates.index)
+                reanalysis_pool['original'] = secondary_predictor.loc[pd.to_datetime(reanalysis_pool.index)]
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_percentile(
                     secondary_predictor_pool=reanalysis_pool,
                     analog_dates=list(reconstructed_data.index),
@@ -280,6 +583,7 @@ def get_closest_neighbor(analog_pool: pd.DataFrame):
     :param analog_pool: Historical data in the pool of analogues. The columns of the dataframe must be
     sorted by closeness to the original day.
     """
+
     # Maximum and minimum bands
     reconstruction_min_band = analog_pool.filter(items=analog_pool.columns).min(axis=1)
     reconstruction_max_band = analog_pool.filter(items=analog_pool.columns).max(axis=1)
@@ -301,7 +605,7 @@ def get_weighted_average(analog_pool: pd.DataFrame, analog_distances: pd.DataFra
     """
 
     # Weight for averaging (Inverse squared distance)
-    coefs = analog_distances[range(sample_size)].apply(lambda x: 1/x ** 2)
+    coefs = analog_distances[range(sample_size)].apply(lambda x: 1 / x ** 2)
 
     # Reconstruction values
     reconstruction_values = analog_pool[range(sample_size)]

@@ -28,17 +28,19 @@ plot_path: "./plots/"
 
 # Stations
 stations:
-  - "segovia"
-  - "retiro"
-  #- 'navacerrada'
+  #- "colmenar"
+  #- "avila"
+  #- "segovia"
+  #- "retiro"
+  - 'navacerrada'
   # - 'PN001002'
   # - 'PN001003'
 
 # Variable
 variables:
   - 'PCNR'
-  #- 'TMAX'
-  #- 'TMIN'
+  - 'TMAX'
+  - 'TMIN'
 
 # Reanalysis variables
 # ['variable acronym', 'pressure level']
@@ -70,7 +72,7 @@ predictor_lat_max: 48
 predictor_lon_min: -15
 predictor_lon_max: 1.5
 
-predictor_grouping: "12hour_1D_mean"
+predictor_grouping: "1D_mean"
 
 grouping_per_variable:
   TMEAN: "1D_mean"
@@ -85,7 +87,7 @@ predictor_for_variable:
   WSPD: [ '925_129' ]
   PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
 
-overwrite_predictor: False
+overwrite_predictor: True
 
 # Secondary predictor
 secondary_predictor_for_variable:
@@ -111,7 +113,7 @@ pca_scaling: 1
     # 1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
     # 2 : PCs are multiplied by the square-root of their eigenvalue.
 
-overwrite_pcs: False
+overwrite_pcs: True
 
 ########################################################################################################################
 # Analog method                                                                                                        #

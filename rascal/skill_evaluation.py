@@ -623,45 +623,6 @@ def get_skill_by_season(predicted, observed, similarity_method):
         skills.to_csv('./output/seasonalskill_' + col + '_' + similarity_method + '.csv')
 
 
-def get_rmse(predicted, observed):
-    """
-    Root Mean squared error
-    """
-    return np.sqrt(np.mean((predicted - observed) ** 2))
-
-
-def get_mbe(predicted, observed):
-    """
-    Mean Bias Error
-    """
-    return np.mean(predicted - observed)
-
-
-def get_msess(predicted, observed):
-    pass
-
-
-def get_bs(predicted, observed, threshold):
-    """
-    Brier Score.
-    """
-    # Arrays of boolean variables.
-    # Consider an event happening when the value of the variable is above a determined threshold
-    predicted_bool = predicted.copy()
-    observed_bool = observed.copy()
-
-    # 1 if the event happens, 0 if not
-    predicted_bool[predicted < threshold] = 0
-    predicted_bool[predicted >= threshold] = 1
-
-    observed_bool[observed < threshold] = 0
-    observed_bool[observed >= threshold] = 1
-
-    brier_score = np.mean((predicted_bool - observed_bool) ** 2)
-
-    return brier_score
-
-
 def get_confusion_matrix(predicted, observed, threshold):
     # Arrays of boolean variables.
     # Consider an event happening when the value of the variable is above a determined threshold
@@ -684,44 +645,6 @@ def get_confusion_matrix(predicted, observed, threshold):
     sns.heatmap(cf_matrix, annot=labels, fmt='', cmap='Blues')
     plt.show()
 
-
-def quantile_plot(predicted: pd.DataFrame, observed: pd.DataFrame):
-    # Check if the columns are the same
-    common_cols = list(set(predicted.columns) & set(observed.columns))
-
-    for col in common_cols:
-        # Get the common column
-        prediction = predicted[col]
-        observation = observed[col]
-
-        prediction, observation = autoval.utils.get_common_index(prediction.to_frame(), observation.to_frame())
-
-        prediction = prediction.squeeze()
-        observation = observation.squeeze()
-
-        # Get the quantile of each value
-        prediction_quantiles = prediction.apply(lambda x: percentileofscore(prediction.values, score=x))
-        observation_quantiles = observation.apply(lambda x: percentileofscore(observation.values, score=x))
-
-        prediction_quantiles = prediction_quantiles.rename('quantile')
-        observation_quantiles = observation_quantiles.rename('quantile')
-
-        prediction = pd.concat([prediction, prediction_quantiles], axis=1)
-        observation = pd.concat([observation, observation_quantiles], axis=1)
-
-        # Reorder by quantile
-        prediction = prediction.set_index('quantile')
-        observation = observation.set_index('quantile')
-
-        # Delete duplicate values
-        prediction = prediction[~prediction.index.duplicated(keep='first')]
-        observation = observation[~observation.index.duplicated(keep='first')]
-
-        # Put in common dataframe
-        df = pd.concat([prediction, observation], axis=1)
-        df.columns = ['Reconstruction', 'Observation']
-
-    return df
 
 
 def plot_errors(errors, variables):
@@ -825,6 +748,8 @@ class TaylorDiagram(object):
         ax.axis["right"].major_ticklabels.set_axis_direction(
             "bottom" if extend else "left")
 
+        # ax.set_aspect("equal")
+
         if self.smin:
             ax.axis["bottom"].toggle(ticklabels=False, label=False)
         else:
@@ -877,9 +802,9 @@ class TaylorDiagram(object):
 
 
 def taylor_test(std_ref, models_skill):
-    fig = plt.figure(figsize=(8, 6))
-    plt.rcParams.update({'font.size': 10})
-    dia = TaylorDiagram(std_ref, fig=fig, label='Observation', extend=True)
+    fig = plt.figure(figsize=(5, 5))
+    plt.rcParams.update({'font.size': 14})
+    dia = TaylorDiagram(std_ref, fig=fig, label='Observation', extend=False)
     dia.samplePoints[0].set_color('r')  # Mark reference point as a red star
 
     for i, (model, values) in enumerate(models_skill.iterrows()):
@@ -915,8 +840,8 @@ def taylor_test(std_ref, models_skill):
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
                numpoints=1, prop=dict(size='small'), loc='upper right',
-               bbox_to_anchor=(1.2, 1), ncol=int(np.ceil(len(models_skill) / 20)))
-    fig.suptitle("Taylor diagram", size='x-large')  # Figure title
+               bbox_to_anchor=(1.5, 0.8), ncol=int(np.ceil(len(models_skill) / 20)))
+    # fig.suptitle("Taylor diagram", size='x-large')  # Figure title
 
     return dia
 
@@ -990,7 +915,6 @@ def ensemble_to_dict(ensemble):
     return ensemble_dict
 
 
-
 def clean_df(df):
     """
     Delete conflictive values from DataFrame (NaN or inf)
@@ -1058,6 +982,16 @@ def calculate_correlation(observed, simulated):
     return correlation
 
 
+def calculate_mse(observed, simulated):
+    """
+    Mean Squared Error
+    """
+    observed, simulated = get_common_data(observed, simulated)
+    se = (observed - simulated)**2
+    mse = se.mean()
+    return mse
+
+
 def calculate_ssmse(observed, simulated, reference):
     """
     MSE-based skill score
@@ -1072,6 +1006,21 @@ def calculate_brier_score(observed, simulated, threshold):
     """
     Brier Score
     """
+    # Arrays of boolean variables.
+    # Consider an event happening when the value of the variable is above a determined threshold
+    predicted_bool = simulated.copy()
+    observed_bool = observed.copy()
+
+    # 1 if the event happens, 0 if not
+    predicted_bool[simulated < threshold] = 0
+    predicted_bool[simulated >= threshold] = 1
+
+    observed_bool[observed < threshold] = 0
+    observed_bool[observed >= threshold] = 1
+
+    brier_score = np.mean((predicted_bool - observed_bool) ** 2)
+
+    return brier_score
 
 
 def calculate_contingency_table(observed, simulated, threshold, norm=False):
@@ -1133,21 +1082,99 @@ def calculate_hss(observed, simulated, reference, threshold):
     return hss
 
 
+def get_skill(observation, simulations, variable, **kwargs):
+    """
+     Generate a pd.DataFrame with the table of skills of various simulations. The skill metrics are:
+        - Mean Bias Error (bias)
+        - Root Mean Squared Error (rmse)
+        - Correlation Coefficient (r2)
+        - Standard Deviation (std)
+        - MSE-based Skill Score (ssmse)
+        - Heidke Skill Score (hss)
+        - Brier Score (bs)
+    :param observation: pd.DataFrame
+    :param simulations: pd.DataFrame
+    :param variable: str
+    :param kwargs:
+        - reference_variable: pd.DataFrame. Time series of a reference model to compare when calculating SSMSE and HSS.
+        - threshold. float. Necessary only for HSS and BS
+    :return:
+        - std_ref: Standard deviation of the observations
+        - models_skill: Table of each skill score for each simulation.
+    """
 
+    if "reference_model" in list(kwargs.keys()):
+        if "threshold" not in list(kwargs.keys()):
+            print("WARNING: A threshold is needed to calculate HSS and BS")
+            models_skill = pd.DataFrame(
+                index=list(simulations.keys()),
+                columns=["bias", "rmse", "r2", "std", "ssmse"]
+            )
+            ssmse = True
+            hss = False
+            bs = False
 
-def get_skill(observation, simulations, variable):
-    models_skill = pd.DataFrame(index=list(simulations.keys()), columns=['bias', 'rmse', 'r2', 'std'])
+        else:
+            models_skill = pd.DataFrame(
+                index=list(simulations.keys()),
+                columns=["bias", "rmse", "r2", "std", "ssmse", "hss", "bs"]
+            )
+            ssmse = True
+            hss = True
+            bs = True
+    else:
+        print("WARNING: A reference model is needed to calculate HSS and SSMSE")
+        if "threshold" not in list(kwargs.keys()):
+            print("WARNING: A threshold is needed to calculate HSS and BS")
+            models_skill = pd.DataFrame(
+                index=list(simulations.keys()),
+                columns=['bias', 'rmse', 'r2', 'std']
+            )
+            ssmse = False
+            hss = False
+            bs = False
+
+        else:
+            models_skill = pd.DataFrame(
+                index=list(simulations.keys()),
+                columns=['bias', 'rmse', 'r2', 'std']
+            )
+            ssmse = False
+            hss = False
+            bs = True
 
     for model, simulation in simulations.items():
-        simulation['observation'] = observation
+        simulation['observation'] = observation.copy()
 
         model_std = np.nanstd(simulation[variable].values)
         model_rmse = calculate_rmse(simulation[variable], simulation['observation'])
         model_bias = calculate_bias(simulation[variable], simulation['observation'])
         model_correlation = calculate_correlation(simulation[variable], simulation['observation'])
-
         models_skill.loc[
             model, ['bias', 'rmse', 'r2', 'std']] = model_bias, model_rmse, model_correlation, model_std
+
+        if ssmse:
+            model_ssmse = calculate_ssmse(
+                observed=simulation["observation"],
+                simulated=simulation[variable],
+                reference=kwargs["reference_model"][variable]
+            )
+            models_skill.loc[model, "ssmse"] = model_ssmse
+        if hss:
+            model_hss = calculate_hss(
+                observed=simulation["observation"],
+                simulated=simulation[variable],
+                reference=kwargs["reference_model"][variable],
+                threshold=kwargs["threshold"]
+            )
+            models_skill.loc[model, "hss"] = model_hss
+        if bs:
+            model_bs = calculate_brier_score(
+                observed=simulation["observation"],
+                simulated=simulation[variable],
+                threshold=kwargs["threshold"]
+            )
+            models_skill.loc[model, "bs"] = model_bs
 
     std_ref = observation.std().values[0]
 
@@ -1155,6 +1182,13 @@ def get_skill(observation, simulations, variable):
 
 
 def quantile_plots(predicted, observed):
+    """
+    Quantile-Quantile Table. Calculate the quantile of each value of the prediction and the simulation. Then compare
+    the value of each quantile between prediction and observation.
+    :param predicted: pd.DataFrame
+    :param observed: pd.DataFrame
+    :return equivalent_quantiles: pd.DataFrame
+    """
 
     # Check if the columns are the same
     common_cols = list(set(predicted.columns) & set(observed.columns))
@@ -1188,7 +1222,7 @@ def quantile_plots(predicted, observed):
         observation = observation[~observation.index.duplicated(keep='first')]
 
         # Put in common dataframe
-        df = pd.concat([prediction, observation], axis=1)
-        df.columns = ['Reconstruction', 'Observation']
+        equivalent_quantiles = pd.concat([prediction, observation], axis=1)
+        equivalent_quantiles.columns = ['Predicted', 'Observed']
 
-    return df
+    return equivalent_quantiles

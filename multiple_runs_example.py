@@ -18,6 +18,8 @@ import os
 import pickle
 import datetime
 import itertools
+
+import helpers.open_data
 import rascal.utils
 import rascal.skill_evaluation
 
@@ -60,7 +62,7 @@ training_dates = pd.date_range(
     freq='1D'
 )
 
-# Reconstruct period
+# Reconstruction period
 test_start = config.get('test_start')
 test_end = config.get('test_end')
 test_dates = pd.date_range(

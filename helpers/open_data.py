@@ -46,7 +46,7 @@ def open_aemet(path, variable_name):
     """
     variable_acronyms = {
         'PCNR': 'Precipitacion',
-        'TMPA': 'Temperaturas',
+        'TMPA': 'Temperatura',
         'WSPD': 'viento',
         'RHMA': 'Humedad'
     }

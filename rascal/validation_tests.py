@@ -11,7 +11,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import rascal.climate
-from rascal.climate import Climatology
+import rascal.utils
+from rascal.utils import Climatology
 import rascal.statistics
 
 impossible_thresholds = {
@@ -385,7 +386,7 @@ def get_significant_residuals(original: pd.DataFrame, reference: pd.DataFrame, c
     """
 
     regression, residuals = Climatology(original).spatial_regression(reference)
-    regression_series = rascal.climate.table_to_series(regression, original.index)
+    regression_series = rascal.utils.table_to_series(regression, original.index)
 
     correlation_columns = [c for c in regression_series.columns if 'correlation' in c]
 

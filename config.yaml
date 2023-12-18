@@ -17,19 +17,24 @@ test_start: [1900, 1, 1]
 test_end: [2010, 12, 31]
 
 # Input paths
-reanalysis_path: '/mnt/disco2/data/NWP'
-observations_path: '/home/alvaro/data/stations/rmpnsg/'
+reanalysis_path: "/home/alvaro/data/NWP/era20c/"
+observations_path: "./data/observations/"
 
 # Output paths
 pca_path: './pca/'
-output_path: './output/'
-plot_path: './plots/'
+temporal_files_path: "./tmp/"
+output_path: "./output/"
+plot_path: "./plots/"
 
 # Stations
 stations:
-  - 'PN001002'
-  - 'PN001003'
+  #- "colmenar"
+  #- "avila"
+  #- "segovia"
+  #- "retiro"
   - 'navacerrada'
+  # - 'PN001002'
+  # - 'PN001003'
 
 # Variable
 variables:
@@ -62,30 +67,59 @@ reanalysis_min_lon: -60
 reanalysis_max_lon: 20
 
 # Synoptic predictor
-synoptic_min_lat: 33
-synoptic_max_lat: 48
-synoptic_min_lon: -15
-synoptic_max_lon: 1.5
+predictor_lat_min: 33
+predictor_lat_max: 48
+predictor_lon_min: -15
+predictor_lon_max: 1.5
 
-predictor_of_variable:
+predictor_grouping: "1D_mean"
+
+grouping_per_variable:
+  TMEAN: "1D_mean"
+  TMAX: "1D_max"
+  TMIN: "1D_min"
+  PCNR: "1D_sum"
+
+predictor_for_variable:
   TMPA: [ '925_129' ]
+  TMAX: [ '925_129' ]
+  TMIN: [ '925_129' ]
   WSPD: [ '925_129' ]
   PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
 
+overwrite_predictor: True
+
 # Secondary predictor
-secondary_predictor_of_variable:
+secondary_predictor_for_variable:
   TMPA: [ 'SURF_167']
+  TMAX: [ 'SURF_167']
+  TMIN: [ 'SURF_167']
   WSPD: [ 'SURF_165', 'SURF_166' ]
-  PCNR: [ 'SURF_228']
+  PCNR: [ 'SURF_71.162', 'SURF_72.162' ] #[ 'SURF_228']
 
-# Principal Component Analysis
+
+########################################################################################################################
+# Principal Component Analysis                                                                                         #
+########################################################################################################################
+seasons:
+  - [12, 1, 2]
+  - [3, 4, 5]
+  - [6, 7, 8]
+  - [9, 10, 11]
 standardize_anomalies: True
-pca_scaling: 1
 n_components: 4
+pca_scaling: 1
+    # 0 : Un-scaled PCs.
+    # 1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
+    # 2 : PCs are multiplied by the square-root of their eigenvalue.
 
-# Analog method
-analog_pool_size: 30
-weighted_mean_sample_size: 3
+overwrite_pcs: True
+
+########################################################################################################################
+# Analog method                                                                                                        #
+########################################################################################################################
+analog_pool_size: [20, 30, 40, 50, 70, 100]
+weighted_mean_sample_size: [2, 3, 5, 10]
 distance: 'euclidean'
 
 validation_window_size: 10
@@ -94,4 +128,4 @@ validation_window_type: 'centered'
 similarity_methods:
   - 'closest'
   - 'average'
-  - 'percentiles'
+  - 'quantilemap'

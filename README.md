@@ -7,7 +7,7 @@ To run this library renalaysis and observational data is required. the reanalysi
 
 The choice of the predictor variable is flexible. However, if you want to reconstruct a long time series, it's important to consider that the connection between the predictor and the predicted variable should be very robust. This is because certain relationships may change in a changing climate scenario.
 
-To run ANATISER, these other python libraries are required:
+To run RASCAL, these other python libraries are required:
 - numpy
 - pandas
 - dask
@@ -15,9 +15,8 @@ To run ANATISER, these other python libraries are required:
 - scipy
 - tqdm
 - sklearn
-
 - cartopy
 - seaborn
-- 
+
 ### References
 Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension, Journal, DOI

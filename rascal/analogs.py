@@ -1,6 +1,5 @@
 """
 Reconstruct meteorological data through the "analog method"
-
 contact: alvaro@intermet.es
 """
 

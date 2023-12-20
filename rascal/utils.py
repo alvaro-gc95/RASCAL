@@ -9,7 +9,6 @@ import pickle
 import typing
 import datetime
 import functools
-import rascal.climate
 import helpers.open_data
 import rascal.statistics
 
@@ -142,8 +141,8 @@ class Preprocess:
             rads_total = rads_total.where(rads_total > 0, np.nan)
             daily_variables = pd.concat([daily_variables, rads_total], axis=1)
 
-        if 'PCNR' in self._obj.columns:
-            ptot = self._obj['PCNR'].resample('D').sum().rename('PCNR')
+        if 'PCP' in self._obj.columns:
+            ptot = self._obj['PCP'].resample('D').sum().rename('PCP')
             daily_variables = pd.concat([daily_variables, ptot], axis=1)
 
         if 'RHMA' in self._obj.columns:

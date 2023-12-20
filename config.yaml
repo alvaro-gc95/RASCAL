@@ -28,17 +28,15 @@ plot_path: "./plots/"
 
 # Stations
 stations:
-  #- "colmenar"
-  #- "avila"
-  #- "segovia"
-  #- "retiro"
+  - "colmenar"
+  - "avila"
+  - "segovia"
+  - "retiro"
   - 'navacerrada'
-  # - 'PN001002'
-  # - 'PN001003'
 
 # Variable
 variables:
-  - 'PCNR'
+  - 'PCP'
   - 'TMAX'
   - 'TMIN'
 
@@ -72,20 +70,20 @@ predictor_lat_max: 48
 predictor_lon_min: -15
 predictor_lon_max: 1.5
 
-predictor_grouping: "1D_mean"
+predictor_grouping: "12hour_1D_mean"
 
 grouping_per_variable:
   TMEAN: "1D_mean"
   TMAX: "1D_max"
   TMIN: "1D_min"
-  PCNR: "1D_sum"
+  PCP: "1D_sum"
 
 predictor_for_variable:
   TMPA: [ '925_129' ]
   TMAX: [ '925_129' ]
   TMIN: [ '925_129' ]
   WSPD: [ '925_129' ]
-  PCNR: [ 'SURF_71.162', 'SURF_72.162' ]
+  PCP: [ 'SURF_71.162', 'SURF_72.162' ]
 
 overwrite_predictor: True
 
@@ -95,7 +93,7 @@ secondary_predictor_for_variable:
   TMAX: [ 'SURF_167']
   TMIN: [ 'SURF_167']
   WSPD: [ 'SURF_165', 'SURF_166' ]
-  PCNR: [ 'SURF_71.162', 'SURF_72.162' ] #[ 'SURF_228']
+  PCP: [ 'SURF_71.162', 'SURF_72.162' ] #[ 'SURF_228']
 
 
 ########################################################################################################################

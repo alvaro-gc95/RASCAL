@@ -136,7 +136,7 @@ def split_in_percentile_intervals(data, intervals):
 
         # Calculate percentile score thresholds
         score_thresholds = [variable.quantile(interval, interpolation='midpoint') for interval in intervals]
-        if column == 'PCNR':
+        if column == 'PCP':
             print(variable)
             print(score_thresholds)
             print('------------------------------------')

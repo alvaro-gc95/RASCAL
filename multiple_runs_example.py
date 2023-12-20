@@ -19,7 +19,6 @@ import pickle
 import datetime
 import itertools
 
-import helpers.open_data
 import rascal.utils
 import rascal.skill_evaluation
 

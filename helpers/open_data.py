@@ -1,5 +1,6 @@
 import datetime
 import itertools
+import calendar
 import os
 import re
 
@@ -78,7 +79,8 @@ def open_aemet(path, variable_name):
 
         variable_df = variable_df.rename(columns=dict(zip(original_variable_columns, new_variable_columns)))
         initial_date = datetime.datetime(variable_df['AÑO'].iloc[0], variable_df['MES'].iloc[0], 1)
-        final_date = datetime.datetime(variable_df['AÑO'].iloc[-1], variable_df['MES'].iloc[-1], 31)
+        _, days_in_month = calendar.monthrange(variable_df['AÑO'].iloc[-1], variable_df['MES'].iloc[-1])
+        final_date = datetime.datetime(variable_df['AÑO'].iloc[-1], variable_df['MES'].iloc[-1], days_in_month)
         dates = pd.date_range(start=initial_date, end=final_date, freq='1D')
 
         variables = list(set(variables))

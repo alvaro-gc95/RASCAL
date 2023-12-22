@@ -11,7 +11,6 @@ from dask_ml.decomposition import PCA
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-import autoval.utils
 import matplotlib.pyplot as plt
 
 

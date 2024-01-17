@@ -36,8 +36,8 @@ class Station:
         self.latitude = meta['latitude'].values[0]
         self.altitude = meta['altitude'].values[0]
 
-    def get_data(self, variable):
-        data = get_daily_data(self.path, variable)
+    def get_data(self, variable, skipna=True):
+        data = get_daily_data(self.path, variable, skipna)
         return data
 
     def get_gridpoint(self, grid_latitudes, grid_longitudes):
@@ -101,7 +101,7 @@ class Preprocess:
 
         del self._obj['E'], self._obj['ES']
 
-    def get_daily_variables(self):
+    def get_daily_variables(self, skipna=True):
         """
         Get relevant daily climatological variables as DataFrame: Maximum, minimum and mean temperature, maximum and
         mean wind velocity, total solar radiation, total precipitation.
@@ -110,44 +110,66 @@ class Preprocess:
         daily_variables = pd.DataFrame()
 
         if 'TMAX' in self._obj.columns:
-            tmax = self._obj['TMAX'].resample('D').max().rename('TMAX')
+            # tmax = self._obj['TMAX'].resample('D').max().rename('TMAX')
+            tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
+            tmax = tmax.squeeze().rename("TMAX")
             daily_variables = pd.concat([daily_variables, tmax], axis=1)
 
         if 'TMIN' in self._obj.columns:
-            tmin = self._obj['TMIN'].resample('D').min().rename('TMIN')
+            # tmin = self._obj['TMIN'].resample('D').min().rename('TMIN')
+            tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
+            tmin = tmin.squeeze().rename("TMIN")
             daily_variables = pd.concat([daily_variables, tmin], axis=1)
 
         if 'TMEAN' in self._obj.columns:
-            tmean = self._obj['TMEAN'].resample('D').mean().rename('TMEAN')
+            # tmean = self._obj['TMEAN'].resample('D').mean().rename('TMEAN')
+            tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
+            tmean = tmean.squeeze().rename("TMEAN")
             daily_variables = pd.concat([daily_variables, tmean], axis=1)
 
         if 'TMPA' in self._obj.columns:
-            tmax = self._obj['TMPA'].resample('D').max().rename('TMAX')
-            tmin = self._obj['TMPA'].resample('D').min().rename('TMIN')
-            tmean = self._obj['TMPA'].resample('D').mean().rename('TMEAN')
+            # tmax = self._obj['TMPA'].resample('D').max().rename('TMAX')
+            tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
+            tmax = tmax.squeeze().rename("TMAX")
+            # tmin = self._obj['TMPA'].resample('D').min().rename('TMIN')
+            tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
+            tmin = tmin.squeeze().rename("TMIN")
+            # tmean = self._obj['TMPA'].resample('D').mean().rename('TMEAN')
+            tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
+            tmean = tmean.squeeze().rename("TMEAN")
             tamp = abs(tmax - tmin)
             tamp = tamp.rename('TAMP')
             daily_variables = pd.concat([daily_variables, tmax, tmin, tmean], axis=1)
 
         if 'WSPD' in self._obj.columns:
             # vmax = self._obj['WSPD'].resample('D').max().rename('VMAX')
-            vmean = self._obj['WSPD'].resample('D').mean().rename('VMEAN')
+            vmean = nan_resampler(self._obj['WSPD'], freq='1D', grouping="mean", skipna=skipna)
+            vmean = vmean.squeeze().rename("VMEAN")
+            # vmean = self._obj['WSPD'].resample('D').mean().rename('VMEAN')
             # daily_variables = pd.concat([daily_variables, vmax, vmean], axis=1)
             daily_variables = pd.concat([daily_variables, vmean], axis=1)
 
         if 'RADS01' in self._obj.columns:
             rascal.utils.Preprocess(self._obj).clear_low_radiance()
-            rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
+            # rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
+            rads_total = nan_resampler(self._obj['RADS01'], freq='1D', grouping="sum", skipna=skipna)
+            rads_total = rads_total.squeeze().rename("RADST")
             rads_total = rads_total.where(rads_total > 0, np.nan)
             daily_variables = pd.concat([daily_variables, rads_total], axis=1)
 
         if 'PCP' in self._obj.columns:
-            ptot = self._obj['PCP'].resample('D').sum().rename('PCP')
+            # ptot = self._obj['PCP'].resample('D').sum().rename('PCP')
+            ptot = nan_resampler(self._obj['PCP'], freq='1D', grouping="sum", skipna=skipna)
+            ptot = ptot.squeeze().rename("PCP")
             daily_variables = pd.concat([daily_variables, ptot], axis=1)
 
         if 'RHMA' in self._obj.columns:
-            rhmax = self._obj['RHMA'].resample('D').max().rename('RHMA')
-            daily_variables = pd.concat([daily_variables, rhmax], axis=1)
+            # rhmax = self._obj['RHMA'].resample('D').max().rename('RHMA')
+            rhmax = nan_resampler(self._obj['RHMA'], freq='1D', grouping="max", skipna=skipna)
+            rhmax = rhmax.squeeze().rename("RHMAX")
+            rhmean = nan_resampler(self._obj['RHMA'], freq='1D', grouping="mean", skipna=skipna)
+            rhmean = rhmean.squeeze().rename("RHMEAN")
+            daily_variables = pd.concat([daily_variables, rhmax, rhmean], axis=1)
 
         daily_variables.index = pd.to_datetime(daily_variables.index)
 
@@ -348,9 +370,9 @@ def get_validation_window(test_date, dates, window_size, window_type='centered')
         return validation_window
 
 
-def get_daily_data(path: str, variable: str):
+def get_daily_data(path: str, variable: str, skipna=False):
     observations = helpers.open_data.open_observations(path, [variable])
-    daily_observations = Preprocess(observations).get_daily_variables()
+    daily_observations = Preprocess(observations).get_daily_variables(skipna=skipna)
     return daily_observations
 
 
@@ -651,3 +673,26 @@ def table_to_series(df: pd.DataFrame, new_index):
                 climatology_series.loc[hourly_dataset.index, variable] = df.loc[str(hour) + '_' + str(month), variable]
 
     return climatology_series
+
+
+def nan_resampler(df, grouping, freq, skipna=True):
+
+    resampled_df = df.resample(freq)
+    idx = resampled_df.indices
+    if grouping == 'mean':
+        resampled_df = [[x[0], x[1].mean(skipna=skipna)] for x in resampled_df]
+    elif grouping == "median":
+        resampled_df = [[x[0], x[1].median(skipna=skipna)] for x in resampled_df]
+    elif grouping == 'sum':
+        resampled_df = [[x[0], x[1].sum(skipna=skipna)] for x in resampled_df]
+    elif grouping == 'min':
+        resampled_df = [[x[0], x[1].min(skipna=skipna)] for x in resampled_df]
+    elif grouping == 'max':
+        resampled_df = [[x[0], x[1].max(skipna=skipna)] for x in resampled_df]
+    else:
+        print("ERROR: grouping '" + grouping + "' does not exist")
+    resampled_df = pd.DataFrame(resampled_df).set_index(0)
+    resampled_df = resampled_df.reindex(idx)
+
+    return resampled_df
+

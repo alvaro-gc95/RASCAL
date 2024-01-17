@@ -256,7 +256,7 @@ class Analogs:
             pool_size=None,
             method=None,
             sample_size=None,
-            reference_variable=None,
+            mapping_variable=None,
             vw_size=None,
             vw_type=None,
             distance=None
@@ -268,9 +268,9 @@ class Analogs:
             - 'closest': (Selected by default) Select the closest analog in the PCs space
             - 'average': Calculate the weighted average of the 'sample_size' closest analogs in the PCs space.
             - 'quantilemap': Select the analog that represent the same quantile in the observations pool that another
-                   reference variable.
+                   mapping variable.
         :param sample_size: int. Number of analogs to average in the 'average' method
-        :param reference_variable: Predictor object. Time series of a variable to use as reference in 'quantilemap'
+        :param mapping_variable: Predictor object. Time series of a variable to use as mapping in 'quantilemap'
                 :param vw_size: int. Validation window size. How many data points around each point is ignored to validate the
             reconstruction.
         :param vw_type: str. Type of validation window. Options:
@@ -303,7 +303,7 @@ class Analogs:
             similarity_method=method,
             analog_distances=analog_distances,
             sample_size=sample_size,
-            reference_variable=reference_variable
+            mapping_variable=mapping_variable
         )
 
         return reconstruction
@@ -547,11 +547,11 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                 )
 
         elif similarity_method == 'quantilemap':
-            if 'reference_variable' not in kwargs.keys():
-                raise AttributeError('Missing argument: reference_variable')
+            if 'mapping_variable' not in kwargs.keys():
+                raise AttributeError('Missing argument: mapping_variable')
             else:
                 # Convert the input predictor object to dataframe
-                secondary_predictor = kwargs["reference_variable"]
+                secondary_predictor = kwargs["mapping_variable"]
                 secondary_predictor = secondary_predictor.data.to_dataframe().drop(["latitude", "longitude"], axis=1)
 
                 # Reanalysis data of the analog pool

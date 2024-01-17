@@ -86,7 +86,7 @@ predictor_lon_max = config.get("predictor_lon_max")
 
 # Dictionaries of predictor variable acronyms for each predictand
 predictors_for_variable = config.get("predictor_for_variable")
-secondary_predictor_for_variable = config.get("secondary_predictor_for_variable")
+mapping_variables_for_variable = config.get("mapping_variables_for_variable")
 
 # Principal predictor grouping
 predictor_grouping = config.get("predictor_grouping")
@@ -137,12 +137,14 @@ if __name__ == '__main__':
         station = Station(path=observations_path + station_code + '/')
         station_data = station.get_data(variable=variable)
 
+        # station_data.index = station_data.index - datetime.timedelta(days=1)
+
         # --------------------------------------------------------------------------------------------------------------
         # 2) Get reanalysis data ---------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------
 
         predictor_variables = predictors_for_variable[variable]
-        secondary_predictor_variables = secondary_predictor_for_variable[variable]
+        mapping_variables = mapping_variables_for_variable[variable]
 
         predictor_filename = tmp_path + "-".join(
             ["and".join(predictor_variables), predictor_grouping, "predictor.pkl"]
@@ -178,20 +180,20 @@ if __name__ == '__main__':
 
         if "quantilemap" in similarity_methods:
 
-            if variable == 'PCNR':
+            if variable == 'PCP':
                 ensemble_member = 0
             else:
                 ensemble_member = None
 
             # Get file paths
-            secondary_predictor_files = rascal.utils.get_files(
+            mapping_variable_files = rascal.utils.get_files(
                 nwp_path=reanalysis_path,
-                variables=secondary_predictor_variables,
+                variables=mapping_variables,
                 dates=years,
                 file_format=".grib")
             # Generate Predictor
-            secondary_predictors = Predictor(
-                paths=secondary_predictor_files,
+            mapping_variable = Predictor(
+                paths=mapping_variable_files,
                 grouping=grouping_per_variable[variable],
                 lat_min=station.latitude,
                 lat_max=station.latitude,
@@ -200,8 +202,8 @@ if __name__ == '__main__':
                 mosaic=False,
                 number=None
             )
-            if len(secondary_predictor_variables) > 1:
-                secondary_predictors.module()
+            if len(mapping_variables) > 1:
+                mapping_variable.module()
 
         # --------------------------------------------------------------------------------------------------------------
         # 3) Get Principal Components of the reanalysis data -----------------------------------------------------------
@@ -235,7 +237,7 @@ if __name__ == '__main__':
         # Create an output directory for the predictors and PC scaling used
         output_directory = (
             output_path + variable + "/" +
-            "-".join(["and".join(predictor_variables), "and".join(secondary_predictor_variables), str(pca_scaling)])
+            "-".join(["and".join(predictor_variables), "and".join(mapping_variables), str(pca_scaling)])
         )
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
@@ -289,7 +291,7 @@ if __name__ == '__main__':
                     reconstruction = analogs.reconstruct(
                         pool_size=pool_size,
                         method=method,
-                        reference_variable=secondary_predictors
+                        mapping_variable=mapping_variable
                     )
 
                     reconstruction_filename = '_'.join([

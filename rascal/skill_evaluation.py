@@ -2,7 +2,6 @@ import os
 import itertools
 import rascal.utils
 import rascal.analogs
-import rascal.statistics
 
 import numpy as np
 import pandas as pd
@@ -337,7 +336,7 @@ class RSkill:
             loc="upper right",
             bbox_to_anchor=[2, 1.0],
             ncol=int(np.ceil(len(self.data.columns) / 20)),
-            fontsize=15
+            fontsize=12
         )
 
         min_value = self.observations.min().values[0]
@@ -1098,143 +1097,6 @@ def get_month_year_bias(predicted, observed):
         print(bias)
 
     return bias
-
-
-def get_skill_by_percentiles(
-        predicted,
-        observed,
-        similarity_method,
-        percentiles=None
-):
-    if percentiles is None:
-        percentiles=[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-
-    # Check if the columns are the same
-    common_cols = list(set(predicted.columns) & set(observed.columns))
-
-    for col in common_cols:
-        observed_col, predicted_col = get_common_data(
-            observed[col].to_frame(),
-            predicted[col].to_frame()
-        )
-
-        observation_by_percentiles = rascal.statistics.split_in_percentile_intervals(
-            observed_col,
-            percentiles
-        )
-
-        # Generate skill dataframe
-        skills = pd.DataFrame(
-            index=observation_by_percentiles.columns,
-            columns=['RMSE', 'MBE', 'Pearson', 'Spearman', 'Brier Score']
-        )
-
-        for interval in observation_by_percentiles:
-            observations_in_interval = observation_by_percentiles[interval]
-
-            observation, prediction = get_common_data(
-                observations_in_interval.to_frame(),
-                predicted_col
-            )
-
-            rmse = calculate_rmse(
-                simulated=prediction.values,
-                observed=observation.values
-            )
-            skills.loc[interval, 'RMSE'] = rmse
-
-            mbe = calculate_mbe(
-                simulated=prediction.values,
-                observed=observation.values
-            )
-            skills['MBE'].loc[interval] = mbe
-
-            prediction = prediction.squeeze()
-            observation = observation.squeeze()
-            # Join the DataFrames
-            data = pd.concat([prediction, observation], axis=1)
-            data.columns = ['rascal', 'observation']
-
-            pearson = data.corr(method='pearson').values[1, 0]
-            skills['Pearson'].loc[interval] = pearson
-
-            spearman = data.corr(method='spearman').values[1, 0]
-            skills['Spearman'].loc[interval] = spearman
-
-            brier = calculate_brier_score(
-                simulated=prediction.values,
-                observed=observation.values,
-                threshold=1
-            )
-            skills['Brier Score'].loc[interval] = brier
-
-        skills.to_csv('./output/percentileskill_' + col + '_' + similarity_method + '.csv')
-
-
-def get_skill_by_season(predicted, observed, similarity_method):
-    # Check if the columns are the same
-    common_cols = list(set(predicted.columns) & set(observed.columns))
-
-    for col in common_cols:
-
-        # Change names of the columns
-        prediction = predicted[col]
-        observation = observed[col]
-
-        prediction, observation = get_common_data(prediction.to_frame(), observation.to_frame())
-        prediction = prediction.squeeze()
-        observation = observation.squeeze()
-
-        # Join the DataFrames
-        data = pd.concat([prediction, observation], axis=1)
-        data.columns = ['rascal', 'observation']
-
-        # Divide the data by seasons
-        data['season'] = [seasons[date.month] for date in data.index]
-
-        # Name of the available seasons
-        seasons_in_data = list(set(data['season'].values))
-
-        # Generate skill dataframe
-        skills = pd.DataFrame(index=seasons_in_data, columns=['RMSE', 'MBE', 'Pearson', 'Spearman', 'Brier Score'])
-
-        # Calculate the climatology
-        for season, seasonal_data in data.groupby(data['season']):
-            # Drop the season column
-            seasonal_data = seasonal_data.drop(['season'], axis=1)
-
-            rmse = calculate_rmse(
-                simulated=seasonal_data['rascal'].values,
-                observed=seasonal_data['observation'].values
-            )
-            skills.loc[season, 'RMSE'] = rmse
-
-            mbe = calculate_mbe(
-                simulated=seasonal_data['rascal'].values,
-                observed=seasonal_data['observation'].values
-            )
-            skills['MBE'].loc[season] = mbe
-
-            pearson = seasonal_data.corr(method='pearson').values[1, 0]
-            skills['Pearson'].loc[season] = pearson
-
-            spearman = seasonal_data.corr(method='spearman').values[1, 0]
-            skills['Spearman'].loc[season] = spearman
-
-            brier = calculate_brier_score(
-                simulated=seasonal_data['rascal'].values,
-                observed=seasonal_data['observation'].values,
-                threshold=1
-            )
-            skills['Brier Score'].loc[season] = brier
-
-            # get_confusion_matrix(
-            #     predicted=seasonal_data['rascal'].values,
-            #     observed=seasonal_data['observation'].values,
-            #     threshold=1
-            # )
-
-        skills.to_csv('./output/seasonalskill_' + col + '_' + similarity_method + '.csv')
 
 
 def get_confusion_matrix(predicted, observed, threshold):

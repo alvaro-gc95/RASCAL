@@ -2,7 +2,7 @@
 RASCAL utility functions
 contact: alvaro@intermet.es
 """
-import itertools
+
 import os
 import yaml
 import pickle
@@ -10,7 +10,6 @@ import typing
 import datetime
 import functools
 import helpers.open_data
-import rascal.statistics
 
 import numpy as np
 import pandas as pd
@@ -150,7 +149,7 @@ class Preprocess:
             daily_variables = pd.concat([daily_variables, vmean], axis=1)
 
         if 'RADS01' in self._obj.columns:
-            rascal.utils.Preprocess(self._obj).clear_low_radiance()
+            Preprocess(self._obj).clear_low_radiance()
             # rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
             rads_total = nan_resampler(self._obj['RADS01'], freq='1D', grouping="sum", skipna=skipna)
             rads_total = rads_total.squeeze().rename("RADST")
@@ -174,91 +173,6 @@ class Preprocess:
         daily_variables.index = pd.to_datetime(daily_variables.index)
 
         return daily_variables
-
-
-class Climatology:
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj
-
-    def daily_cycle(self, percentiles=None, to_series=False):
-        """
-        Calculate the percentiles of the monthly daily cycles
-        """
-        if percentiles is None:
-            percentiles = [0.1, 0.25, 0.5, 0.75, 0.9]
-
-        columns = [v + '_' + str(p) for v, p in itertools.product(self._obj.columns, percentiles)]
-        # Calculate the index of the monthly daily cycles (format = hour_month)
-        idx = [str(h) + '_' + str(m) for h, m in itertools.product(range(0, 24), range(1, 13))]
-
-        # Dataframe of climatological percentiles
-        climatology_percentiles = pd.DataFrame(index=idx, columns=columns)
-
-        # Calculate the climatological daily cycle for each month for each percentile
-        for variable, percentile in itertools.product(self._obj.columns, percentiles):
-            for month, month_dataset in self._obj.groupby(self._obj.index.month):
-                monthly_climatology = month_dataset[variable].groupby(month_dataset.index.hour).quantile(percentile)
-                for hour in monthly_climatology.index:
-                    climatology_percentiles.loc[str(hour) + '_' + str(month), variable + '_' + str(percentile)] = \
-                        monthly_climatology.loc[hour]
-
-        # transform the monthly daily cycles to time series
-        if to_series:
-            return table_to_series(climatology_percentiles, self._obj.index)
-        else:
-            return climatology_percentiles
-
-    def spatial_regression(self, related_site):
-        """
-        Get the correlation and linear regression with a reference station
-        """
-
-        # Calculate the index of tha monthly daily cycles (format = hour_month)
-        idx = [str(h) + '_' + str(m) for h, m in itertools.product(range(0, 24), range(1, 13))]
-        columns = [v + '_' + lr for v, lr in itertools.product(self._obj.columns, ['coef', 'intercept', 'correlation'])]
-        # Dataframe of climatological percentiles
-        regression = pd.DataFrame(index=idx, columns=columns)
-        residuals = pd.DataFrame(index=self._obj.index, columns=[c + '_residuals' for c in self._obj.columns])
-
-        # Group the data by month
-        for month, month_dataset in self._obj.groupby(self._obj.index.month):
-            # Fill the dataframe with the climatological daily cycle of each month
-            for hour, hour_dataset in month_dataset.groupby(month_dataset.index.hour):
-
-                # Select the data of the reference station by month and hour
-                related_site_hm = related_site.loc[
-                    (related_site.index.month == month) &
-                    (related_site.index.hour == hour)
-                ]
-                hour_dataset = hour_dataset
-
-                # Correlate the datasets
-                correlation = related_site_hm.corrwith(hour_dataset)
-
-                for variable in self._obj.columns:
-
-                    linear_regressor, regr_res = rascal.statistics.linear_regression(
-                        x=related_site_hm[variable].to_frame(),
-                        y=hour_dataset[variable].to_frame()
-                    )
-
-                    # Save the coefficient, intercept, and correlation for the hour and month
-                    regression.loc[str(hour) + '_' + str(month),
-                                   variable + '_coef'] = np.squeeze(linear_regressor.coef_)
-                    regression.loc[str(hour) + '_' + str(month),
-                                   variable + '_intercept'] = np.squeeze(linear_regressor.intercept_)
-                    regression.loc[str(hour) + '_' + str(month), variable + '_correlation'] = correlation[variable]
-
-                    residuals.loc[regr_res.index, variable + '_residuals'] = regr_res[variable].values
-
-        return regression, residuals
-
-    def mcp(self):
-        """
-        Wishlist
-        :return:
-        """
-        pass
 
 
 def timer_func(func: typing.Callable = None, prompt: bool = True) -> typing.Callable:
@@ -676,6 +590,14 @@ def table_to_series(df: pd.DataFrame, new_index):
 
 
 def nan_resampler(df, grouping, freq, skipna=True):
+    """
+    The resampler of pandas substitutes the NaNs by zero. This is a cheap solution to keep the NaNs when using the
+    most popular groupings.
+    :param df: pd.DataFrame.
+    :param grouping: str. Oprions = ["mean", "max", "min", "median", "std"]
+    :param freq: str. resampling frequency.
+    :param skipna: bool. Default=True. If False, when grouping data, if there is one NaN value, the result is NaN.
+    """
 
     resampled_df = df.resample(freq)
     idx = resampled_df.indices
@@ -689,6 +611,8 @@ def nan_resampler(df, grouping, freq, skipna=True):
         resampled_df = [[x[0], x[1].min(skipna=skipna)] for x in resampled_df]
     elif grouping == 'max':
         resampled_df = [[x[0], x[1].max(skipna=skipna)] for x in resampled_df]
+    elif grouping == 'std':
+        resampled_df = [[x[0], x[1].std(skipna=skipna)] for x in resampled_df]
     else:
         print("ERROR: grouping '" + grouping + "' does not exist")
     resampled_df = pd.DataFrame(resampled_df).set_index(0)

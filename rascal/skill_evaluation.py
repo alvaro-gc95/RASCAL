@@ -90,16 +90,24 @@ class RSkill:
 
         return RSkill(data=resampled_df)
 
-    def plotseries(self, color=None, start=None, end=None):
+    def plotseries(self, color=None, start=None, end=None, methods=None):
 
         if color is None:
             color = {
-                "reanalysis": "gold",
+                "reanalysis": "y",
                 "observations": "black",
                 "quantilemap": "tab:green",
                 "average": "tab:red",
                 "closest": "tab:blue"
             }
+
+        if methods is None:
+            methods_full_name = self.reconstructions.columns
+        else:
+            methods_full_name = []
+            for c, m in itertools.product(self.reconstructions.columns, methods):
+                if m in c:
+                    methods_full_name.append(c)
 
         plt.rcParams.update({'font.size': 22})
 
@@ -111,7 +119,7 @@ class RSkill:
 
         # Reconstructions
         previous_method = "None"
-        for method in self.reconstructions.columns:
+        for method in methods_full_name:
 
             actual_method = ''.join((x for x in method.split("_")[1] if not x.isdigit()))
 
@@ -131,21 +139,30 @@ class RSkill:
             previous_method = actual_method
 
         # Observations
-        self.observations.plot(ax=ax, color=color["observations"], label="Observations", linewidth=3, marker='o')
+        self.observations[self.observations.columns[0]].plot(
+            ax=ax,
+            color=color["observations"],
+            label="Observations",
+            linewidth=3,
+            marker='o'
+        )
 
         # Reanalysis
-        if len(self.reanalysis.columns) > 1:
-            for member in self.reanalysis.columns:
+        for member in self.reanalysis.columns:
+            if member.split("_")[1] == "mean":
+                alpha = 1
+                lw = 3
+            else:
+                alpha = 0.4
+                lw = 1
+
+            if len(self.reanalysis.columns) > 1:
                 label = "Reanalysis ens. " + member.split("_")[1]
-                if member.split("_")[1] == "mean":
-                    alpha = 1
-                    lw = 3
-                else:
-                    alpha = 0.4
-                    lw = 1
-                self.reanalysis[member].plot(ax=ax, color=color["reanalysis"], label=label, alpha=alpha, linewidth=lw)
-        else:
-            self.reanalysis.plot(ax=ax, color=color["reanalysis"], label="Reanalysis")
+            else:
+                label = "Reanalysis"
+                lw = 3
+                alpha = 1
+            self.reanalysis[member].plot(ax=ax, color=color["reanalysis"], label=label, alpha=alpha, linewidth=lw)
 
         ax.legend(loc='upper right', ncol=1, bbox_to_anchor=[1.31, 1.03])
         ax.set_xlim(start, end)
@@ -209,7 +226,7 @@ class RSkill:
 
         if color is None:
             color = {
-                "reanalysis": "gold",
+                "reanalysis": "y",
                 "observation": "black",
                 "quantilemap": "tab:green",
                 "average": "tab:red",
@@ -241,10 +258,11 @@ class RSkill:
             elif "reanalysis" in method:
                 if method.split("_")[1] != "mean":
                     alpha = 0.4
-                    lw = 1
+                    lw = 1.5
                 if n_members > 1:
                     label = "Reanalysis ens. " + method.split("_")[1]
                 else:
+                    alpha = 1
                     label = "Reanalysis"
 
             elif "observation" in method:
@@ -268,7 +286,7 @@ class RSkill:
             )
             previous_method = actual_method
 
-        ax.legend(loc="upper right", bbox_to_anchor=[1.8, 1.0], ncol=1)
+        ax.legend(loc="upper right", bbox_to_anchor=[1.6, 1.0], ncol=1, fontsize=12)
         ax.set_xticks(range(1, 13))
         ax.set_xlim(1, 12)
         ax.grid()
@@ -281,7 +299,10 @@ class RSkill:
         fig = plt.figure(figsize=(8, 6))
         ax = fig.subplots()
 
-        for i, model in enumerate(self.reconstructions.columns):
+        markers = [".", "o", "<", ">", "^", "v", "8", "s", "p", "P", "*", "h", "H", "X", "d", "D"]
+        markers_cycled = itertools.cycle(markers)
+
+        for model in self.reconstructions.columns:
 
             reconstruction = self.reconstructions[model].to_frame()
 
@@ -297,7 +318,9 @@ class RSkill:
             elif "quantilemap" in model:
                 color = "tab:green"
             else:
-                color = "gold"
+                color = "y"
+
+            label = model.split("_")[1]
 
             sns.scatterplot(
                 data=quantiles,
@@ -306,11 +329,12 @@ class RSkill:
                 ax=ax,
                 alpha=0.6,
                 color=color,
-                label=model,
-                marker=list(Line2D.markers.keys())[i]
+                label=label,
+                marker=next(markers_cycled)
             )
 
-        for i, member in enumerate(self.reanalysis.columns):
+        markers_cycled = itertools.cycle(markers)
+        for member in self.reanalysis.columns:
             reanalysis_member = self.reanalysis[member].to_frame()
 
             reanalysis_quantiles = rascal.skill_evaluation.get_equivalent_quantile(
@@ -318,15 +342,26 @@ class RSkill:
                 observed=self.observations
             )
 
+            if member.split("_")[1] == "mean":
+                alpha = 0.6
+            else:
+                alpha = 0.2
+
+            if len(self.reanalysis.columns) > 1:
+                label = "Reanalysis ens. " + member.split("_")[1]
+            else:
+                label = "Reanalysis"
+                alpha = 0.6
+
             sns.scatterplot(
                 data=reanalysis_quantiles,
                 x='Predicted',
                 y='Observed',
                 ax=ax,
-                alpha=0.6,
-                color="gold",
-                label=member,
-                marker=list(Line2D.markers.keys())[i]
+                alpha=alpha,
+                color="y",
+                label=label,
+                marker=next(markers_cycled)
             )
         ax.axline([0, 0], [1, 1], color='grey')
         ax.set_aspect('equal')
@@ -334,7 +369,7 @@ class RSkill:
 
         ax.legend(
             loc="upper right",
-            bbox_to_anchor=[2, 1.0],
+            bbox_to_anchor=[1.6, 1.0],
             ncol=int(np.ceil(len(self.data.columns) / 20)),
             fontsize=12
         )
@@ -509,7 +544,7 @@ def taylor_test(std_ref, models_skill):
         elif "quantilemap" in model:
             color = "tab:green"
         else:
-            color = "gold"
+            color = "y"
 
         # Select transparency
         if "reanalysis" in model and "mean" not in model and n_members > 1:
@@ -544,7 +579,7 @@ def taylor_test(std_ref, models_skill):
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
                numpoints=1, prop=dict(size='small'), loc='upper right',
-               bbox_to_anchor=(1.6, 1), ncol=int(np.ceil(len(models_skill) / 20)))
+               bbox_to_anchor=(1.5, 1), ncol=int(np.ceil(len(models_skill) / 20)))
 
     # fig.suptitle("Taylor diagram", size='x-large')  # Figure title
 
@@ -699,7 +734,6 @@ def get_reanalysis_ensemble(df, variable_to_validate, freq, grouping):
 
 
 def get_reconstruction_ensemble(filepath, station_to_validate, variable_to_validate, freq, grouping):
-
     file_paths = get_reconstructions_paths(filepath, station_to_validate, variable_to_validate)
 
     reconstruction_ensemble = []
@@ -759,7 +793,6 @@ def ensemble_to_dict(ensemble, ensemble_col):
     members = sorted(list(set(np.squeeze(ensemble[ensemble_col].values))))
 
     for member in members:
-
         # Get individual reconstructions
         ensemble_member = ensemble[ensemble[ensemble_col] == member]
         ensemble_member = ensemble_member.set_index("time")
@@ -775,8 +808,7 @@ def clean_df(df):
     :param df: DataFrame.
     :return df: DataFrame. Cleaned vesion of original df.
     """
-    print(df)
-    assert isinstance(df, pd.Series), "df needs to be a pd.DataFrame"
+    assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
     df.dropna(inplace=True)
     indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
     return df[indices_to_keep].astype(np.float64)
@@ -851,7 +883,7 @@ def calculate_mse(observed, simulated):
     Mean Squared Error
     """
     observed, simulated = get_common_data(observed, simulated)
-    se = (observed - simulated)**2
+    se = (observed - simulated) ** 2
     mse = se.mean()
     return mse
 
@@ -1122,7 +1154,7 @@ def get_confusion_matrix(predicted, observed, threshold):
     plt.show()
 
 
-def get_equivalent_quantile(predicted, observed):
+def get_equivalent_quantile(predicted: pd.DataFrame, observed: pd.DataFrame):
     """
     Quantile-Quantile Table. Calculate the quantile of each value of the prediction and the simulation. Then compare
     the value of each quantile between prediction and observation.
@@ -1131,7 +1163,7 @@ def get_equivalent_quantile(predicted, observed):
     :return equivalent_quantiles: pd.DataFrame
     """
 
-    prediction, observation = get_common_data(predicted, observed)
+    prediction, observation = get_common_data(clean_df(predicted), clean_df(observed))
 
     prediction = prediction.squeeze()
     observation = observation.squeeze()
@@ -1160,3 +1192,22 @@ def get_equivalent_quantile(predicted, observed):
 
     return equivalent_quantiles
 
+
+def get_days_above_threshold(df, threshold, inverse=False):
+    """
+    Label day as 1 when a certain threshold is surpassed, and zero if not. The threshold value is not included.
+    :param df: pd.DataFrame
+    :param threshold: float.
+    :param inverse: bool. Default=False. If True it returns days below threshold.
+    """
+
+    days_above_threshold = df.copy()
+    for col in df.columns:
+        if inverse:
+            days_above_threshold[col][df[col] > threshold] = 0
+            days_above_threshold[col][df[col] <= threshold] = 1
+        else:
+            days_above_threshold[col][df[col] > threshold] = 1
+            days_above_threshold[col][df[col] <= threshold] = 0
+
+    return days_above_threshold

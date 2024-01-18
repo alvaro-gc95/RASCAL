@@ -137,8 +137,6 @@ if __name__ == '__main__':
         station = Station(path=observations_path + station_code + '/')
         station_data = station.get_data(variable=variable)
 
-        # station_data.index = station_data.index - datetime.timedelta(days=1)
-
         # --------------------------------------------------------------------------------------------------------------
         # 2) Get reanalysis data ---------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------
@@ -224,7 +222,8 @@ if __name__ == '__main__':
                 seasons=seasons,
                 standardize=standardize_anomalies,
                 pcscaling=pca_scaling,
-                overwrite=False
+                overwrite=False,
+                path="./tmp/"
             )
             rascal.utils.save_object(predictor_pcs, pcs_filename)
         else:

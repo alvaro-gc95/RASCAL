@@ -130,10 +130,11 @@ class Predictor:
         return anomalies
 
     @rascal.utils.timer_func(prompt=prompt_timer)
-    def pcs(self, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
+    def pcs(self, path, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
         """
         Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
         the analysis does not have to be performed every time.
+        :param path: str. Path to save the PCA results
         :param npcs: int. Number of components.
         :param seasons: list. List of list of months of every season.
         :param standardize: bool. If True, the anomalies used in the PCA are standardized.
@@ -161,7 +162,7 @@ class Predictor:
             initial_year = str(int(pd.to_datetime(anomalies["time"].values[0]).year))
             final_year = str(int(pd.to_datetime(anomalies["time"].values[-1]).year))
             pca_solver_filename = (
-                    './pca/' +
+                    path +
                     ''.join([str(s).zfill(2) for s in season]) + '_'
                     + str(initial_year) + str(final_year) + '.pkl'
             )

@@ -9,7 +9,7 @@ import pickle
 import typing
 import datetime
 import functools
-import helpers.open_data
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,9 @@ prompt_timer = True
 
 
 class Station:
+    """
+    Store station metadata (code, name, altitude, longitude and latitude) and calculate daily time series.
+    """
     def __init__(self, path):
         meta = pd.read_csv(path + 'meta.csv')
         self.path = path
@@ -100,75 +103,80 @@ class Preprocess:
 
         del self._obj['E'], self._obj['ES']
 
-    def get_daily_variables(self, skipna=True):
+    def get_daily_variables(self, skipna=True, grouping=None):
         """
         Get relevant daily climatological variables as DataFrame: Maximum, minimum and mean temperature, maximum and
         mean wind velocity, total solar radiation, total precipitation.
         """
 
+        if grouping is None:
+            grouping = "mean"
+
+        default_variables = ["TMAX", "TMIN", "TMEAN", "TMPA", "WSPD", "RADS01", "PCP", "RHMA"]
         daily_variables = pd.DataFrame()
 
         if 'TMAX' in self._obj.columns:
-            # tmax = self._obj['TMAX'].resample('D').max().rename('TMAX')
             tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
             tmax = tmax.squeeze().rename("TMAX")
             daily_variables = pd.concat([daily_variables, tmax], axis=1)
 
-        if 'TMIN' in self._obj.columns:
-            # tmin = self._obj['TMIN'].resample('D').min().rename('TMIN')
+        elif 'TMIN' in self._obj.columns:
             tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
             tmin = tmin.squeeze().rename("TMIN")
             daily_variables = pd.concat([daily_variables, tmin], axis=1)
 
-        if 'TMEAN' in self._obj.columns:
-            # tmean = self._obj['TMEAN'].resample('D').mean().rename('TMEAN')
+        elif 'TMEAN' in self._obj.columns:
             tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
             tmean = tmean.squeeze().rename("TMEAN")
             daily_variables = pd.concat([daily_variables, tmean], axis=1)
 
-        if 'TMPA' in self._obj.columns:
-            # tmax = self._obj['TMPA'].resample('D').max().rename('TMAX')
+        elif 'TMPA' in self._obj.columns:
             tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
             tmax = tmax.squeeze().rename("TMAX")
-            # tmin = self._obj['TMPA'].resample('D').min().rename('TMIN')
+
             tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
             tmin = tmin.squeeze().rename("TMIN")
-            # tmean = self._obj['TMPA'].resample('D').mean().rename('TMEAN')
+
             tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
             tmean = tmean.squeeze().rename("TMEAN")
-            tamp = abs(tmax - tmin)
-            tamp = tamp.rename('TAMP')
+
+            # tamp = abs(tmax - tmin)
+            # tamp = tamp.rename('TAMP')
+
             daily_variables = pd.concat([daily_variables, tmax, tmin, tmean], axis=1)
 
-        if 'WSPD' in self._obj.columns:
-            # vmax = self._obj['WSPD'].resample('D').max().rename('VMAX')
+        elif 'WSPD' in self._obj.columns:
             vmean = nan_resampler(self._obj['WSPD'], freq='1D', grouping="mean", skipna=skipna)
             vmean = vmean.squeeze().rename("VMEAN")
-            # vmean = self._obj['WSPD'].resample('D').mean().rename('VMEAN')
-            # daily_variables = pd.concat([daily_variables, vmax, vmean], axis=1)
             daily_variables = pd.concat([daily_variables, vmean], axis=1)
 
-        if 'RADS01' in self._obj.columns:
+        elif 'RADS01' in self._obj.columns:
             Preprocess(self._obj).clear_low_radiance()
-            # rads_total = self._obj['RADS01'].resample('D').sum().rename('RADST')
             rads_total = nan_resampler(self._obj['RADS01'], freq='1D', grouping="sum", skipna=skipna)
             rads_total = rads_total.squeeze().rename("RADST")
             rads_total = rads_total.where(rads_total > 0, np.nan)
             daily_variables = pd.concat([daily_variables, rads_total], axis=1)
 
-        if 'PCP' in self._obj.columns:
+        elif 'PCP' in self._obj.columns:
             # ptot = self._obj['PCP'].resample('D').sum().rename('PCP')
             ptot = nan_resampler(self._obj['PCP'], freq='1D', grouping="sum", skipna=skipna)
             ptot = ptot.squeeze().rename("PCP")
             daily_variables = pd.concat([daily_variables, ptot], axis=1)
 
-        if 'RHMA' in self._obj.columns:
-            # rhmax = self._obj['RHMA'].resample('D').max().rename('RHMA')
+        elif 'RHMA' in self._obj.columns:
             rhmax = nan_resampler(self._obj['RHMA'], freq='1D', grouping="max", skipna=skipna)
             rhmax = rhmax.squeeze().rename("RHMAX")
             rhmean = nan_resampler(self._obj['RHMA'], freq='1D', grouping="mean", skipna=skipna)
             rhmean = rhmean.squeeze().rename("RHMEAN")
             daily_variables = pd.concat([daily_variables, rhmax, rhmean], axis=1)
+
+        else:
+            unidentified_variables = [col for col in self._obj.columns if col not in default_variables]
+            for v in unidentified_variables:
+                var = nan_resampler(self._obj[v], freq='1D', grouping=grouping, skipna=skipna)
+                var = var.squeeze().rename(v.upper() + grouping.upper())
+
+                daily_variables = pd.concat([daily_variables, var], axis=1)
 
         daily_variables.index = pd.to_datetime(daily_variables.index)
 
@@ -284,8 +292,38 @@ def get_validation_window(test_date, dates, window_size, window_type='centered')
         return validation_window
 
 
+def open_observations(path: str, variables: list):
+    """
+    Get and rename all observational data from one directory as pandas DataFrame.
+    :param path: str. Path of the files to open.
+    :param variables: list. Acronyms as str of the variables to open.
+    """
+    # Declare an empty dataframe for the complete observations
+    data = pd.DataFrame()
+    # List of all the files in the directory of observations of the station
+    files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    # Search the desired observed variable file through all the files in the directory
+    for file, variable in itertools.product(files, variables):
+        # Open if the file corresponds to the selected variable
+        if file.find(variable) != -1:
+            # Open the file
+            variable_data = pd.read_csv(path + file, index_col=0)
+            # Rename the values column
+            variable_data.columns.values[0] = variable
+            # Change the format of the index to datetime
+            variable_data.index = pd.to_datetime(variable_data.index)
+            # Add to the complete DataFrame
+            data = pd.concat([data, variable_data], axis=1)
+    # Check if the data exists
+    if data.empty:
+        print('Warning: Empty data. Files may not exist in ' + path)
+        exit()
+    else:
+        return data
+
+
 def get_daily_data(path: str, variable: str, skipna=False):
-    observations = helpers.open_data.open_observations(path, [variable])
+    observations = open_observations(path, [variable])
     daily_observations = Preprocess(observations).get_daily_variables(skipna=skipna)
     return daily_observations
 

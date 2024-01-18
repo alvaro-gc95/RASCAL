@@ -2,13 +2,13 @@
 ########################################################################################################################
 # ------------------------ RASCAL (Reconstruction by AnalogS of ClimatologicAL time series) -------------------------- #
 ########################################################################################################################
-Version 1.0
+Version 1.0.0
 Contact: alvaro@intermet.es
 
 Multiple Runs Example
 
 This is an example of how to use RASCAL. This script might be useful as a template to run multiple reconstructions with
-different parameters for various variables and stations. Some extra steps are addeed in order to save time when using it
+different parameters for various variables and stations. Some extra steps are added in order to save time when using it
 multiple times, for example, saving the predictors or the pcs as temporal files to avoid recalculating some common
 intermediate results in each run.
 
@@ -20,7 +20,7 @@ import datetime
 import itertools
 
 import rascal.utils
-import rascal.skill_evaluation
+import rascal.analysis
 
 import pandas as pd
 
@@ -31,9 +31,10 @@ from rascal.analogs import Predictor, Analogs
 config = rascal.utils.open_yaml('config.yaml')
 
 """
-System Parameters
+------------------------------------------------------------------------------------------------------------------------
+System Parameters ------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 """
-
 # Paths
 observations_path = config.get("observations_path")
 reanalysis_path = config.get("reanalysis_path")
@@ -42,9 +43,10 @@ output_path = config.get("output_path")
 
 
 """
-Reconstruction Parameters
+------------------------------------------------------------------------------------------------------------------------
+Reconstruction Parameters ----------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 """
-
 initial_year = config.get('initial_year')
 final_year = config.get('final_year')
 years = [str(y) for y in range(initial_year, final_year + 1)]
@@ -75,9 +77,10 @@ stations = config.get("stations")
 
 
 """
-Predictor Parameters
+------------------------------------------------------------------------------------------------------------------------
+Predictor Parameters ---------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 """
-
 # Predictor domain
 predictor_lat_min = config.get("predictor_lat_min")
 predictor_lat_max = config.get("predictor_lat_max")
@@ -97,7 +100,9 @@ grouping_per_variable = config.get("grouping_per_variable")
 overwrite_predictor = config.get("overwrite_predictor")
 
 """
-Principal Component Analysis Parameters
+------------------------------------------------------------------------------------------------------------------------
+Principal Component Analysis Parameters --------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 """
 
 seasons = config.get("seasons")
@@ -109,13 +114,20 @@ standardize_anomalies = config.get("standardize_anomalies")
 overwrite_pcs = config.get("overwrite_pcs")
 
 """
-Analog Method Parameters
+------------------------------------------------------------------------------------------------------------------------
+Analog Method Parameters -----------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 """
 
 similarity_methods = config.get("similarity_methods")
 pool_sizes = config.get("analog_pool_size")
 sample_sizes = config.get("weighted_mean_sample_size")
 
+"""
+------------------------------------------------------------------------------------------------------------------------
+Multiple Runs Main Function --------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+"""
 if __name__ == '__main__':
 
     for station_code, variable in itertools.product(stations, variables):
@@ -160,6 +172,7 @@ if __name__ == '__main__':
                 variables=predictor_variables,
                 dates=years,
                 file_format=".grib")
+
             # Generate Predictor
             predictors = Predictor(
                 paths=predictor_files,
@@ -178,17 +191,13 @@ if __name__ == '__main__':
 
         if "quantilemap" in similarity_methods:
 
-            if variable == 'PCP':
-                ensemble_member = 0
-            else:
-                ensemble_member = None
-
             # Get file paths
             mapping_variable_files = rascal.utils.get_files(
                 nwp_path=reanalysis_path,
                 variables=mapping_variables,
                 dates=years,
                 file_format=".grib")
+
             # Generate Predictor
             mapping_variable = Predictor(
                 paths=mapping_variable_files,

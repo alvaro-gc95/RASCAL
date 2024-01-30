@@ -24,8 +24,7 @@ import rascal.analysis
 
 import pandas as pd
 
-from rascal.utils import Station
-from rascal.analogs import Predictor, Analogs
+from rascal.analogs import Station, Predictor, Analogs
 
 # Open configuration
 config = rascal.utils.open_yaml('config.yaml')

@@ -24,34 +24,6 @@ coordinate_names = ["time", "latitude", "longitude"]
 prompt_timer = True
 
 
-class Station:
-    """
-    Store station metadata (code, name, altitude, longitude and latitude) and calculate daily time series.
-    """
-    def __init__(self, path):
-        meta = pd.read_csv(path + 'meta.csv')
-        self.path = path
-
-        self.code = meta['code'].values[0]
-        self.name = meta['name'].values[0]
-        self.longitude = meta['longitude'].values[0]
-        self.latitude = meta['latitude'].values[0]
-        self.altitude = meta['altitude'].values[0]
-
-    def get_data(self, variable, skipna=True):
-        data = get_daily_data(self.path, variable, skipna)
-        return data
-
-    def get_gridpoint(self, grid_latitudes, grid_longitudes):
-        ilat, ilon = get_nearest_gridpoint(
-            grid_latitudes=grid_latitudes,
-            grid_longitudes=grid_longitudes,
-            point_longitude=self.longitude,
-            point_latitude=self.latitude
-        )
-        return grid_latitudes[ilat], grid_longitudes[ilon]
-
-
 class Preprocess:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
@@ -597,19 +569,6 @@ def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series,
     axs.set_title('Lower Adjacent Value: ' + str(lower_adjacent_value) + '%')
 
     return lower_adjacent_value
-
-
-def get_station_meta(code):
-    """
-    Get Station latitude, longitude, altitude and full name
-    :param code: str. Code of the station.
-    :return station_data: obj.
-    """
-    network_data = pd.read_csv('./docs/stations.csv')
-    station_data = network_data.loc[network_data['code'] == code]
-    station_data = Station(station_data)
-
-    return station_data
 
 
 def table_to_series(df: pd.DataFrame, new_index):

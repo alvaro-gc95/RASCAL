@@ -24,6 +24,34 @@ coordinate_names = ["time", "latitude", "longitude"]
 prompt_timer = True
 
 
+class Station:
+    """
+    Store station metadata (code, name, altitude, longitude and latitude) and calculate daily time series.
+    """
+    def __init__(self, path):
+        meta = pd.read_csv(path + 'meta.csv')
+        self.path = path
+
+        self.code = meta['code'].values[0]
+        self.name = meta['name'].values[0]
+        self.longitude = meta['longitude'].values[0]
+        self.latitude = meta['latitude'].values[0]
+        self.altitude = meta['altitude'].values[0]
+
+    def get_data(self, variable, skipna=True):
+        data = rascal.utils.get_daily_data(self.path, variable, skipna)
+        return data
+
+    def get_gridpoint(self, grid_latitudes, grid_longitudes):
+        ilat, ilon = rascal.utils.get_nearest_gridpoint(
+            grid_latitudes=grid_latitudes,
+            grid_longitudes=grid_longitudes,
+            point_longitude=self.longitude,
+            point_latitude=self.latitude
+        )
+        return grid_latitudes[ilat], grid_longitudes[ilon]
+
+
 class Predictor:
     """
     Predictor class. This contains data about the predictor variable to use for the reconstruction.

@@ -1,3 +1,8 @@
+"""
+Time series analysis functions
+contact: alvaro@intermet.es
+"""
+
 import os
 import itertools
 import rascal.utils
@@ -195,15 +200,13 @@ class RSkill:
         return observation_std, skill_table
 
     def taylor(self):
+
         observation_std, skill_table = self.skill()
         fig, ax = taylor_test(std_ref=observation_std, models_skill=skill_table)
+
         return fig, ax
 
     def annual_cycle(self, grouping=None, color=None):
-        """
-        cycle_type: str. Options=["monthly", "annual"]
-        freq: str. time resolution of the data in the cycle.
-        """
 
         grouped_data = self.data.groupby(self.data.index.month)
 
@@ -299,7 +302,7 @@ class RSkill:
         fig = plt.figure(figsize=(8, 6))
         ax = fig.subplots()
 
-        markers = [".", "o", "<", ">", "^", "v", "8", "s", "p", "P", "*", "h", "H", "X", "d", "D"]
+        markers = ["o", "<", ">", "^", "v", "8", "s", "p", "P", "*", "h", "H", "X", "d", "D"]
         markers_cycled = itertools.cycle(markers)
 
         for model in self.reconstructions.columns:
@@ -330,7 +333,8 @@ class RSkill:
                 alpha=0.6,
                 color=color,
                 label=label,
-                marker=next(markers_cycled)
+                marker=next(markers_cycled),
+                s=30
             )
 
         markers_cycled = itertools.cycle(markers)
@@ -361,7 +365,8 @@ class RSkill:
                 alpha=alpha,
                 color="y",
                 label=label,
-                marker=next(markers_cycled)
+                marker=next(markers_cycled),
+                s=30
             )
         ax.axline([0, 0], [1, 1], color='grey')
         ax.set_aspect('equal')
@@ -1126,7 +1131,6 @@ def get_month_year_bias(predicted, observed):
         f, ax = plt.subplots(figsize=(6, 9))
         sns.heatmap(bias, linewidths=.5, ax=ax, cmap=cmap.reversed(), vmin=-bias_max, vmax=bias_max)
         plt.show()
-        print(bias)
 
     return bias
 
@@ -1191,23 +1195,3 @@ def get_equivalent_quantile(predicted: pd.DataFrame, observed: pd.DataFrame):
     equivalent_quantiles.columns = ['Predicted', 'Observed']
 
     return equivalent_quantiles
-
-
-def get_days_above_threshold(df, threshold, inverse=False):
-    """
-    Label day as 1 when a certain threshold is surpassed, and zero if not. The threshold value is not included.
-    :param df: pd.DataFrame
-    :param threshold: float.
-    :param inverse: bool. Default=False. If True it returns days below threshold.
-    """
-
-    days_above_threshold = df.copy()
-    for col in df.columns:
-        if inverse:
-            days_above_threshold[col][df[col] > threshold] = 0
-            days_above_threshold[col][df[col] <= threshold] = 1
-        else:
-            days_above_threshold[col][df[col] > threshold] = 1
-            days_above_threshold[col][df[col] <= threshold] = 0
-
-    return days_above_threshold

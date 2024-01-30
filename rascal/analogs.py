@@ -10,13 +10,13 @@ import pickle
 import numpy as np
 import pandas as pd
 import xarray as xr
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
+# import cartopy.crs as ccrs
+# import matplotlib.pyplot as plt
 
 from eofs.xarray import Eof
 from dask.diagnostics import ProgressBar
 from scipy.stats import percentileofscore
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+# from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 import rascal.utils
 
@@ -374,76 +374,76 @@ def get_pca_solver(data_array, file_name, overwrite=True):
     return solver
 
 
-def plot_pca(file_name, n_components, vectorial=False):
-    """
-    Plot maps of the EOFs
-    :param file_name: str. Name of the solver file.
-    :param n_components: int. Number of components to represent.
-    :param vectorial: bool. If True represent the EOFs as a contour of the module and quiver plot fot direction.
-    """
-
-    # Open solver object
-    with open(file_name, 'rb') as inp:
-        solver = pickle.load(inp)
-
-    # This is the map projection we want to plot *onto*
-    map_proj = ccrs.PlateCarree()
-
-    # EOF maps
-    eofs = solver.eofs(neofs=n_components)
-
-    if vectorial:
-        # Separate the concatenated vectorial variable in u, v and module
-        eofs = rascal.utils.separate_concatenated_components(eofs)
-
-        for mode in eofs['mode'].values:
-            # Defining the figure
-            fig = plt.figure(figsize=(4, 4), facecolor='w',
-                             edgecolor='k')
-
-            # Axes with Cartopy projection
-            ax = plt.axes(projection=ccrs.PlateCarree())
-            p = eofs['module'].sel(mode=mode).plot.contourf(transform=ccrs.PlateCarree(), levels=20)
-
-            # Defining the quiver plot
-            quiver = eofs.sel(mode=mode).plot.quiver(x='longitude', y='latitude', u='u', v='v',
-                                                     transform=ccrs.PlateCarree(), scale=1)
-
-            # # Vector options declaration
-            veclenght = 0.05
-            maxstr = '%3.1f kg m-1 s-1' % veclenght
-            ax.quiverkey(quiver, -0.1, -0.1, veclenght, maxstr, labelpos='S', coordinates='axes')
-
-            ax.coastlines()
-            explained_variance_ratio = solver.varianceFraction(n_components).sel(mode=mode).values
-            ax.set_title(
-                'Mode ' + str(mode + 1) + ' (exp. var. = ' + str(round(explained_variance_ratio * 100, 2)) + '%)')
-
-            gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                              linewidth=0.1, color='k', alpha=1,
-                              linestyle='--')
-            gl.top_labels = False
-            gl.right_labels = False
-            gl.xformatter = LONGITUDE_FORMATTER
-            gl.yformatter = LATITUDE_FORMATTER
-            gl.xlabel_style = {'size': 8}
-            gl.ylabel_style = {'size': 8}
-
-            plt.savefig(file_name[:-3] + '_mode' + str(mode + 1) + '.png')
-
-    else:
-        p = eofs.plot.contourf(transform=ccrs.PlateCarree(),  # the data's projection
-                               col='mode', col_wrap=1,  # multiplot settings
-                               subplot_kws={'projection': map_proj},
-                               levels=20)  # the plot's projection
-
-        # We have to set the map's options on all four axes
-        for i, ax in enumerate(p.axes.flat):
-            ax.coastlines()
-            explained_variance_ratio = solver.varianceFraction(n_components).sel(mode=i).values
-            ax.set_title('Mode ' + str(i + 1) + ' (exp. var. = ' + str(round(explained_variance_ratio * 100, 2)) + '%)')
-
-        plt.savefig(file_name[:-3] + '.png')
+# def plot_pca(file_name, n_components, vectorial=False):
+#     """
+#     Plot maps of the EOFs
+#     :param file_name: str. Name of the solver file.
+#     :param n_components: int. Number of components to represent.
+#     :param vectorial: bool. If True represent the EOFs as a contour of the module and quiver plot fot direction.
+#     """
+#
+#     # Open solver object
+#     with open(file_name, 'rb') as inp:
+#         solver = pickle.load(inp)
+#
+#     # This is the map projection we want to plot *onto*
+#     map_proj = ccrs.PlateCarree()
+#
+#     # EOF maps
+#     eofs = solver.eofs(neofs=n_components)
+#
+#     if vectorial:
+#         # Separate the concatenated vectorial variable in u, v and module
+#         eofs = rascal.utils.separate_concatenated_components(eofs)
+#
+#         for mode in eofs['mode'].values:
+#             # Defining the figure
+#             fig = plt.figure(figsize=(4, 4), facecolor='w',
+#                              edgecolor='k')
+#
+#             # Axes with Cartopy projection
+#             ax = plt.axes(projection=ccrs.PlateCarree())
+#             p = eofs['module'].sel(mode=mode).plot.contourf(transform=ccrs.PlateCarree(), levels=20)
+#
+#             # Defining the quiver plot
+#             quiver = eofs.sel(mode=mode).plot.quiver(x='longitude', y='latitude', u='u', v='v',
+#                                                      transform=ccrs.PlateCarree(), scale=1)
+#
+#             # # Vector options declaration
+#             veclenght = 0.05
+#             maxstr = '%3.1f kg m-1 s-1' % veclenght
+#             ax.quiverkey(quiver, -0.1, -0.1, veclenght, maxstr, labelpos='S', coordinates='axes')
+#
+#             ax.coastlines()
+#             explained_variance_ratio = solver.varianceFraction(n_components).sel(mode=mode).values
+#             ax.set_title(
+#                 'Mode ' + str(mode + 1) + ' (exp. var. = ' + str(round(explained_variance_ratio * 100, 2)) + '%)')
+#
+#             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+#                               linewidth=0.1, color='k', alpha=1,
+#                               linestyle='--')
+#             gl.top_labels = False
+#             gl.right_labels = False
+#             gl.xformatter = LONGITUDE_FORMATTER
+#             gl.yformatter = LATITUDE_FORMATTER
+#             gl.xlabel_style = {'size': 8}
+#             gl.ylabel_style = {'size': 8}
+#
+#             plt.savefig(file_name[:-3] + '_mode' + str(mode + 1) + '.png')
+#
+#     else:
+#         p = eofs.plot.contourf(transform=ccrs.PlateCarree(),  # the data's projection
+#                                col='mode', col_wrap=1,  # multiplot settings
+#                                subplot_kws={'projection': map_proj},
+#                                levels=20)  # the plot's projection
+#
+#         # We have to set the map's options on all four axes
+#         for i, ax in enumerate(p.axes.flat):
+#             ax.coastlines()
+#             explained_variance_ratio = solver.varianceFraction(n_components).sel(mode=i).values
+#             ax.set_title('Mode ' + str(i + 1) + ' (exp. var. = ' + str(round(explained_variance_ratio * 100, 2)) + '%)')
+#
+#         plt.savefig(file_name[:-3] + '.png')
 
 
 def calculate_distances(origin, points, distance='euclidean'):

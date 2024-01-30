@@ -17,7 +17,7 @@ test_start: [1900, 1, 1]
 test_end: [2010, 12, 31]
 
 # Input paths
-reanalysis_path: "/home/alvaro/data/NWP/era20c/"
+reanalysis_path: "./data/era20c/"
 observations_path: "./data/observations/"
 
 # Output paths
@@ -37,8 +37,8 @@ stations:
 # Variable
 variables:
   - 'PCP'
-  #- 'TMAX'
-  #- 'TMIN'
+  - 'TMAX'
+  - 'TMIN'
 
 # Reanalysis variables
 # ['variable acronym', 'pressure level']
@@ -93,7 +93,7 @@ mapping_variables_for_variable:
   TMAX: [ 'SURF_167']
   TMIN: [ 'SURF_167']
   WSPD: [ 'SURF_165', 'SURF_166' ]
-  PCP: [ 'SURF_71.162', 'SURF_72.162' ] #[ 'SURF_228']
+  PCP: [ 'SURF_71.162', 'SURF_72.162' ] 
 
 
 ########################################################################################################################

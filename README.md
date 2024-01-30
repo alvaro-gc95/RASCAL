@@ -15,8 +15,7 @@ To run RASCAL, these other python libraries are required:
 - scipy
 - tqdm
 - sklearn
-- cartopy
 - seaborn
 
 ### References
-Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension, Journal, DOI
+Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction, Extension and Validation

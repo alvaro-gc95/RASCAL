@@ -31,12 +31,15 @@ or using the files in _rascal/_ directory inside this repository
 
 RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill
 
+### 1) Get observational data
 To load the observational data (in daily or sub-daily resolution) and the station metadata, the data is loaded from a CSV file with the same name as the desired variable, and a meta.csv file containing the name, code, altitude, longitude and latitude of the station
 
 ```ruby
 station = Station(path='./data/observations/station/')
 station_data = station.get_data(variable='PCP')
 ```
+
+### 2) Load and process predictor fields from large-scale models
 To load the reanalysis or large-scale model data we use the Predictor class. This example shows how to use the Total Column of Water Vapor Flux from the ERA20C reanalysis. In this reanalysis the components U and V of the TCWVF are named '71.162' and '72.162'. The predictor is set or the years 1900-1910, for each day only the 12:00 is selected through the _grouping_ argument, the domain is 80ºN-20ºN, 60ºW-20ºE. The _mosaic_ argument set to ___True___ concatenates both components U and V in the longitude axis to obtain a single compound variable of size _(time x 2*longitude x latitude)_:
 
 ```ruby
@@ -60,7 +63,7 @@ predictors = Predictor(
 )
 
 ```
-
+### 3) Perform Principal Component Analysis on the predictor fields
 The Principal Component Analysis (PCA) of the compund variable standardized anomalies, with 4 principal components and for the conventionan seasons DJF, MAM, JJA, and SON,  is conducted as follows:
 ```ruby
 predictor_pcs = predictors.pcs(
@@ -71,12 +74,14 @@ predictor_pcs = predictors.pcs(
 )
 ```
 
+### 4) Look at the PC space to find analog days in the historical data
 After performing the PCA, the obtained values of the principal componets act as the predictor used to perform the reconstructions. First the analog days, in order of euclidean distance, are found.
 
 ```ruby
 analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
 ```
 
+### 5) Reconstruct or extend missing observational data 
 Later, the reconstuctions are made using one of the following similarity methods: _closest_, _average_, or _quantilemap_.
 
 ```ruby
@@ -85,7 +90,7 @@ reconstruction = analogs.reconstruct(
     method='closest',
 )
 ```
-
+### 6) Evaluate the reconstructions based on your scientific goals
 The evaluation of the reconstructions is made with the RSkill class. The Jupyter Notebook _'RASCAL_evaluation'_ contains examples of applications
 
 ## References

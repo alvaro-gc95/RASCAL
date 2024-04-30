@@ -131,7 +131,7 @@ class Predictor:
         self.data = vector_module
         return self
 
-    def anomalies(self, seasons=None, standardize=None):
+    def anomalies(self, seasons=None, standardize=None, mean_period=None):
         """
         Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
         contained within it.
@@ -144,11 +144,13 @@ class Predictor:
             seasons = [[int(m) for m in range(1, 13)]]
         if standardize is None:
             standardize = True
+        if mean_period is None:
+            mean_period = self.data["time"].values
 
         # Get the seasonal anomalies of the predictor field
         anomalies = []
         for i, season in enumerate(seasons):
-            season_dates = [date for date in pd.to_datetime(self.data["time"].values) if date.month in season]
+            season_dates = [date for date in pd.to_datetime(mean_period) if date.month in season]
             seasonal_predictors = self.data.sel(time=season_dates)
             seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
             seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
@@ -158,7 +160,17 @@ class Predictor:
         return anomalies
 
     @rascal.utils.timer_func(prompt=prompt_timer)
-    def pcs(self, path, npcs, seasons=None, standardize=None, pcscaling=None, overwrite=None):
+    def pcs(
+            self,
+            path: str,
+            npcs: int,
+            seasons=None,
+            standardize=None,
+            pcscaling=None,
+            overwrite=None,
+            training=None,
+            project=None
+    ):
         """
         Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
         the analysis does not have to be performed every time.
@@ -171,6 +183,8 @@ class Predictor:
             1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
             2 : PCs are multiplied by the square-root of their eigenvalue.
         :param overwrite: bool. Default = False. If True recalculate the PCA and overwrite the pickle with the PCA
+        :param training: pd.DatetimeIndex. Dates to use for calculating the PCA
+        :param project: xr.DataArray. Data to project onto the calculated PCA
         results.
         """
 
@@ -179,16 +193,47 @@ class Predictor:
         if overwrite is None:
             overwrite = False
 
-        anomalies = self.anomalies(seasons=seasons, standardize=standardize)
-        with ProgressBar():
-            anomalies = anomalies.compute()
+        if training is not None:
+            training_dates = sorted(list(set(training) & set(self.data["time"].values)))
+            testing_dates = sorted(list(set(training) | set(self.data["time"].values)))
+        else:
+            training_dates = self.data["time"].values
+            testing_dates = None
 
+        training_anomalies = get_seasonal_anomalies(
+            self.data,
+            seasons=seasons,
+            standardize=standardize,
+            mean_period=training_dates
+        )
+
+        testing_anomalies = get_seasonal_anomalies(
+            self.data.sel(time=testing_dates),
+            seasons=seasons,
+            standardize=standardize,
+            mean_period=training_dates
+        )
+
+        anomalies_to_project = get_seasonal_anomalies(
+            project,
+            seasons=seasons,
+            standardize=standardize,
+            mean_period=training_dates
+        )
+
+        with ProgressBar():
+            training_anomalies = training_anomalies.compute()
+        with ProgressBar():
+            testing_anomalies = testing_anomalies.compute()
+        with ProgressBar():
+            anomalies_to_project = anomalies_to_project.compute()
+
+        initial_year = str(int(pd.to_datetime(self.data["time"].values[0]).year))
+        final_year = str(int(pd.to_datetime(self.data["time"].values[-1]).year))
         pcs = []
         for i, season in enumerate(seasons):
 
             # Filename to the PCA solver object that contains tha analysis information
-            initial_year = str(int(pd.to_datetime(anomalies["time"].values[0]).year))
-            final_year = str(int(pd.to_datetime(anomalies["time"].values[-1]).year))
             pca_solver_filename = (
                     path +
                     ''.join([str(s).zfill(2) for s in season]) + '_'
@@ -196,17 +241,40 @@ class Predictor:
             )
 
             if overwrite:
-                seasonal_anomalies = anomalies.sel(season=i).dropna(dim="time")
+
+                seasonal_anomalies = training_anomalies.sel(season=i).dropna(dim="time")
                 seasonal_anomalies = seasonal_anomalies.to_array().squeeze(dim="variable")
-                pcs_solver = rascal.analogs.get_pca_solver(seasonal_anomalies, pca_solver_filename, overwrite=overwrite)
+
+                seasonal_test_anomalies = testing_anomalies.sel(season=i).dropna(dim="time")
+                seasonal_test_anomalies = seasonal_test_anomalies.to_array().squeeze(dim="variable")
+
+                pcs_solver = rascal.analogs.get_pca_solver(
+                    seasonal_anomalies,
+                    pca_solver_filename,
+                    overwrite=overwrite
+                )
             else:
                 # Avoid calculating anomalies if the pca solver already exists and overwrite == False
                 pcs_solver = rascal.analogs.get_pca_solver(None, pca_solver_filename, overwrite=overwrite)
 
             seasonal_pcs = pcs_solver.pcs(npcs=npcs, pcscaling=pcscaling)
+            testing_pcs = pcs_solver.projectField(seasonal_test_anomalies)
             seasonal_pcs = seasonal_pcs.expand_dims({"season": [i]})
+            testing_pcs = testing_pcs.expand_dims({"season": [i]})
             pcs.append(seasonal_pcs)
+            pcs.append(testing_pcs)
+
+            if project is not None:
+
+                seasonal_proj_anomalies = anomalies_to_project.sel(season=i).dropna(dim="time")
+                seasonal_proj_anomalies = seasonal_proj_anomalies.to_array().squeeze(dim="variable")
+
+                projected_pcs = pcs_solver.projectField(seasonal_proj_anomalies)
+                projected_pcs = projected_pcs.expand_dims({"season": [i]})
+                pcs.append(projected_pcs)
+
         pcs = xr.merge(pcs)
+        pcs = pcs.sortby('time')
 
         return pcs
 
@@ -337,14 +405,43 @@ class Analogs:
 
         return reconstruction
 
+def get_seasonal_anomalies(data, seasons, standardize, mean_period):
+    """
+    Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
+    contained within it.
+    :param seasons: list. Months of the season. Default = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    :param standardize: bool. Standardize anomalies. Default = True
+    :return: anomalies. xr.DataSet. dims = [time, latitude, longitude, season]
+    """
 
-def calculate_anomalies(data_array: xr.DataArray, standardize=False):
+    if seasons is None:
+        seasons = [[int(m) for m in range(1, 13)]]
+    if standardize is None:
+        standardize = True
+    if mean_period is None:
+        mean_period = data["time"].values
+
+    # Get the seasonal anomalies of the predictor field
+    anomalies = []
+    for i, season in enumerate(seasons):
+        season_dates = [date for date in pd.to_datetime(mean_period) if date.month in season]
+        seasonal_predictors = data.sel(time=season_dates)
+        seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
+        seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
+        anomalies.append(seasonal_anomalies)
+    anomalies = xr.merge(anomalies)
+
+    return anomalies
+
+
+def calculate_anomalies(data_array: xr.DataArray, standardize=False, mean_period=None):
     """
     :param data_array: DataArray.
     :param standardize: bool. Default=False. If True divide the anomalies by its standard deviation.
+    :param mean_period: pd.DatetimeIndex. Dates to use to calculate the mean
     :return anomalies: DataArray.
     """
-    mean = data_array.mean(dim='time')
+    mean = data_array.sel(time=mean_period).mean(dim='time')
     anomalies = data_array - mean
     if standardize:
         anomalies = anomalies / anomalies.std(dim='time')

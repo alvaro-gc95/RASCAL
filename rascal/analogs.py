@@ -426,7 +426,7 @@ def get_seasonal_anomalies(data, seasons, standardize, mean_period):
     for i, season in enumerate(seasons):
         season_dates = [date for date in pd.to_datetime(mean_period) if date.month in season]
         seasonal_predictors = data.sel(time=season_dates)
-        seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize)
+        seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize, mean_period=season_dates)
         seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
         anomalies.append(seasonal_anomalies)
     anomalies = xr.merge(anomalies)

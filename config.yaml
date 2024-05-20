@@ -120,6 +120,6 @@ validation_window_size: 10
 validation_window_type: 'centered'
 
 similarity_methods:
-  - 'closest'
-  - 'average'
+  #- 'closest'
+  #- 'average'
   - 'quantilemap'

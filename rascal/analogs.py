@@ -715,6 +715,7 @@ def reconstruct_by_analogs(observed_data, analog_dates, similarity_method='close
                 # selected, the full year is taken, and this nos happens with the analog dates.index. I leave this
                 # here just in case this gives problems
                 # secondary_predictor.index = pd.to_datetime(analog_dates.index)
+
                 reanalysis_pool['original'] = secondary_predictor.loc[pd.to_datetime(reanalysis_pool.index)]
                 reconstruction_series, reconstruction_min_band, reconstruction_max_band = get_closest_percentile(
                     secondary_predictor_pool=reanalysis_pool,

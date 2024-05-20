@@ -165,7 +165,7 @@ class Predictor:
             path: str,
             npcs: int,
             seasons=None,
-            standardize=None,
+            standardize: bool = None,
             pcscaling=None,
             overwrite=None,
             training=None,
@@ -196,37 +196,39 @@ class Predictor:
         if training is not None:
             training_dates = sorted(list(set(training) & set(self.data["time"].values)))
             testing_dates = sorted(list(set(training) | set(self.data["time"].values)))
+            testing_anomalies = get_seasonal_anomalies(
+                self.data.sel(time=testing_dates),
+                seasons=seasons,
+                standardize=standardize,
+                mean_period=training_dates
+            )
         else:
             training_dates = self.data["time"].values
-            testing_dates = None
+            testing_dates = False
 
         training_anomalies = get_seasonal_anomalies(
-            self.data,
+            self.data.sel(time=training_dates),
             seasons=seasons,
             standardize=standardize,
             mean_period=training_dates
         )
 
-        testing_anomalies = get_seasonal_anomalies(
-            self.data.sel(time=testing_dates),
-            seasons=seasons,
-            standardize=standardize,
-            mean_period=training_dates
-        )
-
-        anomalies_to_project = get_seasonal_anomalies(
-            project,
-            seasons=seasons,
-            standardize=standardize,
-            mean_period=training_dates
-        )
+        if project is not None:
+            anomalies_to_project = get_seasonal_anomalies(
+                project,
+                seasons=seasons,
+                standardize=standardize,
+                mean_period=training_dates
+            )
 
         with ProgressBar():
             training_anomalies = training_anomalies.compute()
-        with ProgressBar():
-            testing_anomalies = testing_anomalies.compute()
-        with ProgressBar():
-            anomalies_to_project = anomalies_to_project.compute()
+        if testing_dates:
+            with ProgressBar():
+                testing_anomalies = testing_anomalies.compute()
+        if project is not None:
+            with ProgressBar():
+                anomalies_to_project = anomalies_to_project.compute()
 
         initial_year = str(int(pd.to_datetime(self.data["time"].values[0]).year))
         final_year = str(int(pd.to_datetime(self.data["time"].values[-1]).year))
@@ -244,25 +246,43 @@ class Predictor:
 
                 seasonal_anomalies = training_anomalies.sel(season=i).dropna(dim="time")
                 seasonal_anomalies = seasonal_anomalies.to_array().squeeze(dim="variable")
-
-                seasonal_test_anomalies = testing_anomalies.sel(season=i).dropna(dim="time")
-                seasonal_test_anomalies = seasonal_test_anomalies.to_array().squeeze(dim="variable")
+                if testing_dates:
+                    seasonal_test_anomalies = testing_anomalies.sel(season=i).dropna(dim="time")
+                    seasonal_test_anomalies = seasonal_test_anomalies.to_array().squeeze(dim="variable")
 
                 pcs_solver = rascal.analogs.get_pca_solver(
                     seasonal_anomalies,
                     pca_solver_filename,
                     overwrite=overwrite
                 )
+
             else:
-                # Avoid calculating anomalies if the pca solver already exists and overwrite == False
-                pcs_solver = rascal.analogs.get_pca_solver(None, pca_solver_filename, overwrite=overwrite)
+
+                if os.path.exists(pca_solver_filename):
+                    # Avoid calculating anomalies if the pca solver already exists and overwrite == False
+                    pcs_solver = rascal.analogs.get_pca_solver(None, pca_solver_filename, overwrite=overwrite)
+
+                else:
+                    seasonal_anomalies = training_anomalies.sel(season=i).dropna(dim="time")
+                    seasonal_anomalies = seasonal_anomalies.to_array().squeeze(dim="variable")
+                    if testing_dates:
+                        seasonal_test_anomalies = testing_anomalies.sel(season=i).dropna(dim="time")
+                        seasonal_test_anomalies = seasonal_test_anomalies.to_array().squeeze(dim="variable")
+
+                    pcs_solver = rascal.analogs.get_pca_solver(
+                        seasonal_anomalies,
+                        pca_solver_filename,
+                        overwrite=overwrite
+                    )
 
             seasonal_pcs = pcs_solver.pcs(npcs=npcs, pcscaling=pcscaling)
-            testing_pcs = pcs_solver.projectField(seasonal_test_anomalies)
             seasonal_pcs = seasonal_pcs.expand_dims({"season": [i]})
-            testing_pcs = testing_pcs.expand_dims({"season": [i]})
             pcs.append(seasonal_pcs)
-            pcs.append(testing_pcs)
+
+            if testing_dates:
+                testing_pcs = pcs_solver.projectField(seasonal_test_anomalies)
+                testing_pcs = testing_pcs.expand_dims({"season": [i]})
+                pcs.append(testing_pcs)
 
             if project is not None:
 
@@ -405,6 +425,7 @@ class Analogs:
 
         return reconstruction
 
+
 def get_seasonal_anomalies(data, seasons, standardize, mean_period):
     """
     Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
@@ -426,9 +447,13 @@ def get_seasonal_anomalies(data, seasons, standardize, mean_period):
     for i, season in enumerate(seasons):
         season_dates = [date for date in pd.to_datetime(mean_period) if date.month in season]
         seasonal_predictors = data.sel(time=season_dates)
-        seasonal_anomalies = rascal.analogs.calculate_anomalies(seasonal_predictors, standardize=standardize, mean_period=season_dates)
+        seasonal_anomalies = rascal.analogs.calculate_anomalies(
+            seasonal_predictors,
+            standardize=standardize,
+            mean_period=season_dates
+        )
         seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
-        anomalies.append(seasonal_anomalies)
+        anomalies.append(seasonal_anomalies.to_dataset(name="anomalies"))
     anomalies = xr.merge(anomalies)
 
     return anomalies

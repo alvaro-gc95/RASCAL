@@ -103,13 +103,13 @@ class Preprocess:
             daily_variables = pd.concat([daily_variables, tmean], axis=1)
 
         elif 'TMPA' in self._obj.columns:
-            tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
+            tmax = nan_resampler(self._obj['TMPA'], freq='1D', grouping="max", skipna=skipna)
             tmax = tmax.squeeze().rename("TMAX")
 
-            tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
+            tmin = nan_resampler(self._obj['TMPA'], freq='1D', grouping="min", skipna=skipna)
             tmin = tmin.squeeze().rename("TMIN")
 
-            tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
+            tmean = nan_resampler(self._obj['TMPA'], freq='1D', grouping="mean", skipna=skipna)
             tmean = tmean.squeeze().rename("TMEAN")
 
             # tamp = abs(tmax - tmin)
@@ -209,7 +209,8 @@ def clean_dataset(df):
     """
     assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
     df.dropna(inplace=True)
-    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis="columns")
+
     return df[indices_to_keep].astype(np.float64)
 
 

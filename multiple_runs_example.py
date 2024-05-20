@@ -170,7 +170,7 @@ if __name__ == '__main__':
                 nwp_path=reanalysis_path,
                 variables=predictor_variables,
                 dates=years,
-                file_format=".grib")
+                file_format=".nc")
 
             # Generate Predictor
             predictors = Predictor(
@@ -195,7 +195,7 @@ if __name__ == '__main__':
                 nwp_path=reanalysis_path,
                 variables=mapping_variables,
                 dates=years,
-                file_format=".grib")
+                file_format=".nc")
 
             # Generate Predictor
             mapping_variable = Predictor(

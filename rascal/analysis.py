@@ -154,6 +154,7 @@ class RSkill:
 
         # Reanalysis
         for member in self.reanalysis.columns:
+            print(member)
             if member.split("_")[1] == "mean":
                 alpha = 1
                 lw = 3
@@ -672,18 +673,13 @@ def get_reanalysis_in_gridpoint(
     else:
         reanalysis_data.columns = [variable + "_" + str(ensemble_member)]
 
-    # Change units
-    # Kelvin to Celsius
-    if variable in ["TMAX", "TMIN", "TMEAN", "TMPA"]:
-        reanalysis_data = reanalysis_data - 273.1
-    # m to mm
-    elif variable == "PCP":
-        reanalysis_data = reanalysis_data * 1000
+    if isinstance(reanalysis_data.columns, pd.MultiIndex):
+        reanalysis_data.columns = ['_'.join(x) for x in reanalysis_data.columns]
 
     return reanalysis_data
 
 
-def get_reanalysis_ensemble(df, variable_to_validate, freq, grouping):
+def get_reanalysis_ensemble(df: pd.DataFrame, variable_to_validate, freq, grouping):
     """
     Process reanalysis resamples when dealing with ensembles. This work for a multiindexed dataframe or with a
     multiple column dataframe.
@@ -694,7 +690,6 @@ def get_reanalysis_ensemble(df, variable_to_validate, freq, grouping):
     :return resampled_df: pd.DataFrame.
     """
     if isinstance(df.index, pd.MultiIndex):
-
         unstacked_df = df.unstack()
 
         if grouping == "mean":
@@ -719,6 +714,7 @@ def get_reanalysis_ensemble(df, variable_to_validate, freq, grouping):
         resampled_df = pd.concat([resampled_df, ensemble_mean], axis=1)
 
     else:
+        print(df.columns)
         if grouping == "mean":
             resampled_df = df.resample(freq).mean()
         elif grouping == 'sum' or grouping == 'hydrosum' and freq != "1Y":

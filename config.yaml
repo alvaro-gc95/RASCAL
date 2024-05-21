@@ -13,7 +13,7 @@ training_start: [2014, 1, 1]
 training_end: [2020, 3, 31]
 
 # Test period: Period to reconstruct.
-test_start: [2020, 1, 1]
+test_start: [2014, 1, 1]
 test_end: [2023, 3, 31]
 
 # Input paths
@@ -58,7 +58,7 @@ predictor_for_variable:
   TMIN: [ '850_129' ]
   PCP: [ 'SURF_71.162', 'SURF_72.162' ]
 
-overwrite_predictor: False
+overwrite_predictor: True
 
 # Quantile Mapping Variable
 mapping_variables_for_variable:
@@ -83,7 +83,7 @@ pca_scaling: 1
     # 1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).
     # 2 : PCs are multiplied by the square-root of their eigenvalue.
 
-overwrite_pcs: False
+overwrite_pcs: True
 
 ########################################################################################################################
 # Analog method                                                                                                        #

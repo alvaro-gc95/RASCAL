@@ -7,15 +7,17 @@ To run this library renalaysis and observational data is required. the reanalysi
 
 The choice of the predictor variable is flexible. However, if you want to reconstruct a long time series, it's important to consider that the connection between the predictor and the predicted variable should be very robust. This is because certain relationships may change in a changing climate scenario.
 
-To run RASCAL, these other python libraries are required:
-- numpy
-- pandas
-- dask
-- xarray
-- scipy
-- tqdm
-- sklearn
-- seaborn
+RASCAL is based in python 3.10. To run RASCAL, these other python libraries are required:
+
+- numpy 1.26.4
+- pandas 2.2.1
+- dask 2024.4.1
+- xarray 2024.3.0
+- scipy 1.13.0
+- tqdm 4.65.0
+- scikit-learn 1.4.1.post1
+- seaborn 0.13.2
+- eofs 1.4.1
 
 ## Getting Started
 
@@ -31,11 +33,15 @@ or using the files in _rascal/_ directory inside this repository
 
 RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill
 
+```python
+import rascal
+```
+
 ### 1) Get observational data
 To load the observational data (in daily or sub-daily resolution) and the station metadata, the data is loaded from a CSV file with the same name as the desired variable, and a meta.csv file containing the name, code, altitude, longitude and latitude of the station
 
 ```python
-station = Station(path='./data/observations/station/')
+station = rascal.analogs.Station(path='./data/observations/station/')
 station_data = station.get_data(variable='PCP')
 ```
 
@@ -52,7 +58,7 @@ predictor_files = rascal.utils.get_files(
 )
 
 # Generate Predictor
-predictors = Predictor(
+predictors = rascal.analogs.Predictor(
     paths=predictor_files,
     grouping='12h_1D_mean',
     lat_min=20,
@@ -78,7 +84,7 @@ predictor_pcs = predictors.pcs(
 After performing the PCA, the obtained values of the principal componets act as the predictor used to perform the reconstructions. First the analog days, in order of euclidean distance, are found.
 
 ```python
-analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
+analogs = rascal.analogs.Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
 ```
 
 ### 5) Reconstruct or extend missing observational data 
@@ -94,5 +100,7 @@ reconstruction = analogs.reconstruct(
 The evaluation of the reconstructions is made with the RSkill class. The Jupyter Notebook _'RASCAL_evaluation'_ contains examples of applications
 
 ## References
-Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction, Extension and Validation
+Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction, Extension and Validation. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
 Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.0 (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.10592595
+
+

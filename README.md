@@ -100,7 +100,7 @@ reconstruction = analogs.reconstruct(
 The evaluation of the reconstructions is made with the RSkill class. The Jupyter Notebook _'RASCAL_evaluation'_ contains examples of applications
 
 ## References
-- Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction, Extension and Validation. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
+- Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
 
 - Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.0 (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.10592595
 

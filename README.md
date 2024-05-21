@@ -19,6 +19,10 @@ RASCAL is based in python 3.10. To run RASCAL, these other python libraries are 
 - seaborn 0.13.2
 - eofs 1.4.1
 
+## Documentation
+
+For a more detalied documentation you can check [RASCAL ReadTheDocs](https://rascalv100.readthedocs.io). 
+
 ## Getting Started
 
 RASCAL can be installed through PyPi

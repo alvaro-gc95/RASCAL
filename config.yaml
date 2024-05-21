@@ -4,16 +4,16 @@
 # contact: alvaro@intermet.es                                                                                          #
 ########################################################################################################################
 
-# Total period
+# Total period that spans the reanalysis data
 initial_year: 2014
 final_year: 2023
 
-# Training period
+# Training period: Period to use to calculate the PCA.
 training_start: [2014, 1, 1]
-training_end: [2023, 3, 31]
+training_end: [2020, 3, 31]
 
-# Test period
-test_start: [2014, 1, 1]
+# Test period: Period to reconstruct.
+test_start: [2020, 1, 1]
 test_end: [2023, 3, 31]
 
 # Input paths
@@ -30,34 +30,13 @@ plot_path: "./plots/"
 stations:
   - "01"
 
-# Variable
+# Variables to reconstruct
 variables:
-  - "TMPA"
-
-# Reanalysis variables
-# ['variable acronym', 'pressure level']
-reanalysis_variable_levels:
-  - ['129', '925']
-  - ['129', '850']
-  - ['131', '850']
-  - ['132', '850']
-  - ['130', '850']
-  - ['157', '950']
-  - ['228', 'surf']
-  - ['165', 'surf']
-  - ['166', 'surf']
-  - ['246', 'surf']
-  - ['247', 'surf']
-  - ['167', 'surf']
-  - ['71.162', 'surf']
-  - ['72.162', 'surf']
-  - ['168', 'surf']
-
-# Reanalysis domain
-reanalysis_min_lat: 33.1
-reanalysis_max_lat: 43.9
-reanalysis_min_lon: 17.6
-reanalysis_max_lon: 28.3
+  - "TMEAN"
+  # - "TMAX"
+  # - "TMin"
+  # - "WSPD"
+  # - "PCP"
 
 # Synoptic predictor
 predictor_lat_min: 33.1
@@ -68,27 +47,24 @@ predictor_lon_max: 28.3
 predictor_grouping: "12hour_1D_mean"
 
 grouping_per_variable:
-  TMPA: "1D_mean"
   TMEAN: "1D_mean"
   TMAX: "1D_max"
   TMIN: "1D_min"
   PCP: "1D_sum"
 
 predictor_for_variable:
-  TMPA: [ '850_129' ]
+  TMEAN: [ '850_129' ]
   TMAX: [ '850_129' ]
   TMIN: [ '850_129' ]
-  WSPD: [ '850_129' ]
   PCP: [ 'SURF_71.162', 'SURF_72.162' ]
 
 overwrite_predictor: False
 
-# Secondary predictor
+# Quantile Mapping Variable
 mapping_variables_for_variable:
-  TMPA: [ 'SURF_167']
+  TMEAN: [ 'SURF_167']
   TMAX: [ 'SURF_167']
   TMIN: [ 'SURF_167']
-  WSPD: [ 'SURF_165', 'SURF_166' ]
   PCP: [ 'SURF_71.162', 'SURF_72.162' ] 
 
 
@@ -116,10 +92,10 @@ analog_pool_size: [20, 50, 100]
 weighted_mean_sample_size: [2, 5, 10]
 distance: 'euclidean'
 
-validation_window_size: 10
+validation_window_size: 0
 validation_window_type: 'centered'
 
 similarity_methods:
-  #- 'closest'
-  #- 'average'
+  - 'closest'
+  - 'average'
   - 'quantilemap'

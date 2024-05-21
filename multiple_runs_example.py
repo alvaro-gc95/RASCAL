@@ -230,7 +230,7 @@ if __name__ == '__main__':
                 seasons=seasons,
                 standardize=standardize_anomalies,
                 pcscaling=pca_scaling,
-                overwrite=False,
+                overwrite=True,
                 path="./tmp/"
             )
             rascal.utils.save_object(predictor_pcs, pcs_filename)

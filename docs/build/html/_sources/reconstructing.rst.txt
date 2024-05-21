@@ -1,0 +1,20 @@
+How to reconstruct
+============
+
+Via PyPi
+------------
+
+To use RASCAL, first install it using pip:
+
+.. code-block:: console
+
+   (.venv) $ pip install rascal-ties
+   
+Via GitHub
+------------
+
+To use RASCAL, first install it using pip:
+
+.. code-block:: console
+
+   (.venv) $ git clone https://github.com/alvaro-gc95/RASCAL

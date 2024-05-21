@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Overview: Modules &mdash; RASCAL 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8d563738"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Advanced Tutorials" href="advanced.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RASCAL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="begginer.html">Begginer Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Code Overview: Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-analogs">analogs.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#analogs.rascal.analogs.Station"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.path"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.meta"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.longitude"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.longitude</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.latitude"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.latitude</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.altitude"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.altitude</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.get_data"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.get_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Station.get_gridpoint"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station.get_gridpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#analogs.rascal.analogs.Predictor"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.data"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.crop"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.crop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.to_mosaic"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.to_mosaic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.module"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.module()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.anomalies"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.anomalies()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Predictor.pcs"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor.pcs()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#analogs.rascal.analogs.Analogs"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Analogs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Analogs.get_pool"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Analogs.get_pool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analogs.rascal.analogs.Analogs.reconstruct"><code class="docutils literal notranslate"><span class="pre">rascal.analogs.Analogs.reconstruct()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-analysis">analysis.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#analysis.rascal.analysis.RSkill"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.observations"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.observations</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.reconstructions"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.reconstructions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.reanalysis"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.reanalysis</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.data"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.resample"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.resample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.plotseries"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.plotseries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.skill"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.skill()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.taylor"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.taylor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.annual_cycle"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.annual_cycle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#analysis.rascal.analysis.RSkill.qqplot"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill.qqplot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-indices">indices.py</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#indices.rascal.analysis.CIndex"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.fd"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.fd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.su"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.su()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.id"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tr"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.gsl"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.gsl()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.txx"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.txx()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tnx"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tnx()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.txn"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.txn()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tnn"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tnn()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tn10p"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tn10p()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tx10p"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tx10p()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tn90p"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tn90p()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.tx90p"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.tx90p()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.wsdi"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.wsdi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.csdi"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.csdi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.dtr"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.dtr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.rx1day"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.rx1day()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.rx5day"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.rx5day()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.sdii"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.sdii()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.r10mm"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.r10mm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.r20mm"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.r20mm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.rnnmm"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.rnnmm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.cdd"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.cdd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.cwd"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.cwd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.r95ptot"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.r95ptot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.r99ptot"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.r99ptot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indices.rascal.analysis.CIndex.prcptot"><code class="docutils literal notranslate"><span class="pre">rascal.analysis.CIndex.prcptot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RASCAL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Code Overview: Modules</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/code.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="code-overview-modules">
+<h1>Code Overview: Modules<a class="headerlink" href="#code-overview-modules" title="Link to this heading"></a></h1>
+<section id="module-analogs">
+<span id="analogs-py"></span><h2>analogs.py<a class="headerlink" href="#module-analogs" title="Link to this heading"></a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">synopsis<span class="colon">:</span></dt>
+<dd class="field-odd"><p>This module contain the principal classes and functions to make the time series preprocessing and reconstructions</p>
+</dd>
+</dl>
+<p>The <code class="docutils literal notranslate"><span class="pre">rascal.analogs.Station()</span></code> class stores station metadata (code, name, altitude, longitude and latitude) and calculate daily time series.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rascal.analogs.</span></span><span class="sig-name descname"><span class="pre">Station</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Station" title="Link to this definition"></a></dt>
+<dd><p>Stores station metadata (code, name, altitude, longitude and latitude) and calculate daily time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path of the directory that contains the observations.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.path">
+<span class="sig-name descname"><span class="pre">path</span></span><a class="headerlink" href="#analogs.rascal.analogs.Station.path" title="Link to this definition"></a></dt>
+<dd><p>Path of the directory that contains the observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.meta">
+<span class="sig-name descname"><span class="pre">meta</span></span><a class="headerlink" href="#analogs.rascal.analogs.Station.meta" title="Link to this definition"></a></dt>
+<dd><p>DataFrame with the metadata of the station (code, name, altitude, longitude and latitude)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.longitude">
+<span class="sig-name descname"><span class="pre">longitude</span></span><a class="headerlink" href="#analogs.rascal.analogs.Station.longitude" title="Link to this definition"></a></dt>
+<dd><p>Longitude of the station</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.latitude">
+<span class="sig-name descname"><span class="pre">latitude</span></span><a class="headerlink" href="#analogs.rascal.analogs.Station.latitude" title="Link to this definition"></a></dt>
+<dd><p>Latitude of the station</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.altitude">
+<span class="sig-name descname"><span class="pre">altitude</span></span><a class="headerlink" href="#analogs.rascal.analogs.Station.altitude" title="Link to this definition"></a></dt>
+<dd><p>Elevation of the station</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">skipna=True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Station.get_data" title="Link to this definition"></a></dt>
+<dd><p>Get the daily time series of the <code class="docutils literal notranslate"><span class="pre">variable</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>variable</strong> (<em>str</em>) – variable name.</p></li>
+<li><p><strong>skipna</strong> (<em>bool</em>) – skipna when resampling to daily frequency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Station.get_gridpoint">
+<span class="sig-name descname"><span class="pre">get_gridpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_latitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_longitudes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Station.get_gridpoint" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<p>The <code class="docutils literal notranslate"><span class="pre">rascal.analogs.Predictor()</span></code> class stores the predictor data and Principal Component Analysis results:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rascal.analogs.</span></span><span class="sig-name descname"><span class="pre">Predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grouping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_max</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">mosaic=True</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">number=None</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor" title="Link to this definition"></a></dt>
+<dd><p>Predictor class. This contains data about the predictor variable to use for the reconstruction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Paths of the grib file to open.</p></li>
+<li><p><strong>grouping</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Method of grouping the data, str format = “frequency_method”</p>
+<ul>
+<li><p>frequency=(“hourly”, “daily”, “monthly”, “yearly”)</p></li>
+<li><p>method=(“mean”, “max”, “min”, “sum”)</p></li>
+</ul>
+</p></li>
+<li><p><strong>lat_min</strong> (<em>float</em>) – Predictor field minimum latitude</p></li>
+<li><p><strong>lat_max</strong> (<em>float</em>) – Predictor field maximum latitude</p></li>
+<li><p><strong>lon_min</strong> (<em>float</em>) – Predictor field minimum longitude</p></li>
+<li><p><strong>lon_max</strong> (<em>float</em>) – Predictor field maximum longitude</p></li>
+<li><p><strong>mosaic</strong> (<em>bool</em><em> or </em><em>None</em>) – if True apply <code class="docutils literal notranslate"><span class="pre">.to_mosaic()</span></code> method</p></li>
+<li><p><strong>number</strong> (<em>int</em><em> or </em><em>None</em>) – Ensemble member number</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.data" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.crop">
+<span class="sig-name descname"><span class="pre">crop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_max</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.crop" title="Link to this definition"></a></dt>
+<dd><p>Crop the domain of the dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lat_min</strong> (<em>float</em>) – New minimum latitude</p></li>
+<li><p><strong>lat_max</strong> (<em>float</em>) – New maximum latitude</p></li>
+<li><p><strong>lon_min</strong> (<em>float</em>) – New minimum longitude</p></li>
+<li><p><strong>lon_max</strong> (<em>float</em>) – New maximum longitude</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.to_mosaic">
+<span class="sig-name descname"><span class="pre">to_mosaic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.to_mosaic" title="Link to this definition"></a></dt>
+<dd><p>To use various simultaneous predictors or a vectorial variable, concatenate the variables along the longitude
+axis to obtain a single compound variable, easier to use when performing PCA.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>compound_predictor</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>xr.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.module">
+<span class="sig-name descname"><span class="pre">module</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.module" title="Link to this definition"></a></dt>
+<dd><p>Get the module of the predictor variables as if they were components of a vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>self</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#analogs.rascal.analogs.Predictor" title="analogs.rascal.analogs.Predictor">Predictor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.anomalies">
+<span class="sig-name descname"><span class="pre">anomalies</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">seasons</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">standardize</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">mean_period</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.anomalies" title="Link to this definition"></a></dt>
+<dd><p>Calculate seasonal anomalies of the field. The definition of season is flexible, being only a list of months
+contained within it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seasons</strong> (<em>list</em><em>[</em><em>list</em><em>[</em><em>int</em><em>]</em><em>] or </em><em>None</em>) – Months of the season. Default = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12</p></li>
+<li><p><strong>standardize</strong> (<em>bool</em><em> or </em><em>None</em>) – Standardize anomalies. Default = True</p></li>
+<li><p><strong>mean_period</strong> (<em>list</em><em>[</em><em>pd.DatetimeIndex</em><em>] or </em><em>None</em>) – Dates to use as mean climatology to calculate the anomalies.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>anomalies (dims = [time, latitude, longitude, season])</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Predictor.pcs">
+<span class="sig-name descname"><span class="pre">pcs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npcs</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">seasons</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">standardize</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">pcscaling</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">training</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">project</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Predictor.pcs" title="Link to this definition"></a></dt>
+<dd><p>Perform Principal Component Analysis. To save computation time, the PCA object can be saved as a pickle, so
+the analysis does not have to be performed every time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to save the PCA results</p></li>
+<li><p><strong>npcs</strong> (<em>int</em>) – Number of components.</p></li>
+<li><p><strong>seasons</strong> (<em>list</em><em>[</em><em>list</em><em>[</em><em>int</em><em>]</em><em>] or </em><em>None</em>) – List of list of months of every season.</p></li>
+<li><p><strong>standardize</strong> (<em>bool</em><em> or </em><em>None</em>) – If True, the anomalies used in the PCA are standardized.</p></li>
+<li><p><strong>pcscaling</strong> (<em>int</em><em> or </em><em>None</em>) – <p>Set the scaling of the PCs used to compute covariance. The following values are accepted:</p>
+<ul>
+<li><p>0 : Un-scaled PCs.</p></li>
+<li><p>1 : PCs are scaled to unit variance (divided by the square-root of their eigenvalue) (default).</p></li>
+<li><p>2 : PCs are multiplied by the square-root of their eigenvalue.</p></li>
+</ul>
+</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em><em> or </em><em>None</em>) – Default = False. If True recalculate the PCA and overwrite the pickle with the PCA</p></li>
+<li><p><strong>training</strong> (<em>list</em><em>[</em><em>pd.DatetimeIndex</em><em>] or </em><em>None</em>) – Dates to use for calculating the PCA</p></li>
+<li><p><strong>project</strong> (<em>xr.Dataset</em><em> or </em><em>None</em>) – Data to project onto the calculated PCA results.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>The <code class="docutils literal notranslate"><span class="pre">rascal.analogs.Analogs()</span></code> get the pool of analog days and reconstruct the time series:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Analogs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rascal.analogs.</span></span><span class="sig-name descname"><span class="pre">Analogs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pcs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Analogs" title="Link to this definition"></a></dt>
+<dd><p>Predictor class. This contains data about the predictor variable to use for the reconstruction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>None</em>) – Optional “kind” of ingredients.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Analogs.get_pool">
+<span class="sig-name descname"><span class="pre">get_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">vw_size</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">vw_type</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Analogs.get_pool" title="Link to this definition"></a></dt>
+<dd><blockquote>
+<div><p>Get the pool of <code class="docutils literal notranslate"><span class="pre">size</span></code> closest neighbors to each day</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<em>int</em>) – Number of neighbors in the pool.</p></li>
+<li><p><strong>vw_size</strong> (<em>int</em><em> or </em><em>None</em>) – Validation window size. How many data points around each point is ignored to validate the
+reconstruction.</p></li>
+<li><p><strong>vw_type</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Type of validation window. Options:</p>
+<ul>
+<li><p>forward: The original date is the last date of the window.</p></li>
+<li><p>backward: The original date is the firs date of the window.</p></li>
+<li><p>centered: The original date is in the center of the window.</p></li>
+</ul>
+</p></li>
+<li><p><strong>distance</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Metric to determine the distance between points in the PCs space. Options:</p>
+<ul>
+<li><p>euclidean</p></li>
+<li><p>mahalanobis (Wishlist)</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(analog_dates,</span> <span class="pre">analog_distances)</span></code>, dates of the analogs in the pool for each day, and distances in the PCs space of each</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(pd.DataFrame, pd.DataFrame)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analogs.rascal.analogs.Analogs.reconstruct">
+<span class="sig-name descname"><span class="pre">reconstruct</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">pool_size</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">mapping_variable</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">vw_size</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">vw_type</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analogs.rascal.analogs.Analogs.reconstruct" title="Link to this definition"></a></dt>
+<dd><p>Reconstruct a time series using the analog pool for each day.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pool_size</strong> (<em>int</em><em> or </em><em>None</em>) – Size of the analog pool for each day.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Similarity method to select the best analog of the pool. Options are:</p>
+<ul>
+<li><p>’closest’: (Selected by default) Select the closest analog in the PCs space</p></li>
+<li><p>’average’: Calculate the weighted average of the ‘sample_size’ closest analogs in the PCs space.</p></li>
+<li><p>’quantilemap’: Select the analog that represent the same quantile in the observations pool that another mapping variable.</p></li>
+</ul>
+</p></li>
+<li><p><strong>sample_size</strong> (<em>int</em><em> or </em><em>None</em>) – Number of analogs to average in the ‘average’ method</p></li>
+<li><p><strong>mapping_variable</strong> (<a class="reference internal" href="#analogs.rascal.analogs.Predictor" title="analogs.rascal.analogs.Predictor"><em>Predictor</em></a><em> or </em><em>None</em>) – Time series of a variable to use as mapping in ‘quantilemap’</p></li>
+<li><p><strong>vw_size</strong> (<em>int</em><em> or </em><em>None</em>) – Validation window size. How many data points around each point is ignored to validate the reconstruction.</p></li>
+<li><p><strong>vw_type</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Type of validation window. Options:</p>
+<ul>
+<li><p>forward: The original date is the last date of the window.</p></li>
+<li><p>backward: The original date is the firs date of the window.</p></li>
+<li><p>centered: The original date is in the center of the window.</p></li>
+</ul>
+</p></li>
+<li><p><strong>distance</strong> (<em>str</em><em> or </em><em>None</em>) – <p>Metric to determine the distance between points in the PCs space. Options:</p>
+<ul>
+<li><p>euclidean</p></li>
+<li><p>mahalanobis (Wishlist)</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>reconstruction</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-analysis">
+<span id="analysis-py"></span><h2>analysis.py<a class="headerlink" href="#module-analysis" title="Link to this heading"></a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">synopsis<span class="colon">:</span></dt>
+<dd class="field-odd"><p>This module contain the principal classes and functions analyze the skill and validate the reconstructions</p>
+</dd>
+</dl>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">rascal.analysis.RSkill()</span></code> class to validate and analyze the skill of the reconstructions:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rascal.analysis.</span></span><span class="sig-name descname"><span class="pre">RSkill</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reconstructions</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reanalysis</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill" title="Link to this definition"></a></dt>
+<dd><p>Predictor class. This contains data about the predictor variable to use for the reconstruction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observations</strong> (<em>pd.DataFrame</em><em> or </em><em>None</em>) – Obstervations time series</p></li>
+<li><p><strong>reconstructions</strong> (<em>pd.DataFrame</em><em> or </em><em>None</em>) – Reconstructions time series</p></li>
+<li><p><strong>reanalysis</strong> (<em>pd.DataFrame</em><em> or </em><em>None</em>) – Reanalysis time series</p></li>
+<li><p><strong>data</strong> (<em>pd.DataFrame</em><em> or </em><em>None</em>) – All data joined (observations, reconstructions, reanalysis)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.observations">
+<span class="sig-name descname"><span class="pre">observations</span></span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.observations" title="Link to this definition"></a></dt>
+<dd><p>Obstervations time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.reconstructions">
+<span class="sig-name descname"><span class="pre">reconstructions</span></span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.reconstructions" title="Link to this definition"></a></dt>
+<dd><p>Reconstructions time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.reanalysis">
+<span class="sig-name descname"><span class="pre">reanalysis</span></span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.reanalysis" title="Link to this definition"></a></dt>
+<dd><p>Reanalysis time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.data" title="Link to this definition"></a></dt>
+<dd><p>All data joined (observations, reconstructions, reanalysis) concatenated in the columns axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.resample">
+<span class="sig-name descname"><span class="pre">resample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grouping</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">hydroyear</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">skipna</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.resample" title="Link to this definition"></a></dt>
+<dd><p>Resample the dataset containing observations, reconstructions and reanalysis data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>freq</strong> (<em>str</em>) – New sampling frequency.</p></li>
+<li><p><strong>grouping</strong> (<em>str</em>) – Options=”mean”, “median” or “sum”</p></li>
+<li><p><strong>hydroyear</strong> (<em>bool</em><em> or </em><em>None</em>) – Default=False. If True, when the resampling frequency is “1Y” it takes hydrological years (from October to September) instead of natural years</p></li>
+<li><p><strong>skipna</strong> (<em>bool</em><em> or </em><em>None</em>) – Default=False. If True ignore NaNs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>RSkill with resampled data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#analysis.rascal.analysis.RSkill" title="analysis.rascal.analysis.RSkill">RSkill</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.plotseries">
+<span class="sig-name descname"><span class="pre">plotseries</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">methods</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.plotseries" title="Link to this definition"></a></dt>
+<dd><p>Plot the time series of the reconstructions with the reanalysis and observations series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>color</strong> (<em>dict</em><em> or </em><em>None</em>) – dict of which color to use (values) with each dataset (keys)</p></li>
+<li><p><strong>start</strong> (<em>Datetime</em><em> or </em><em>None</em>) – Start date of the plot</p></li>
+<li><p><strong>end</strong> (<em>Datetime</em><em> or </em><em>None</em>) – End date of the plot</p></li>
+<li><p><strong>methods</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>None</em>) – Reconstruction methods to plot</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.skill">
+<span class="sig-name descname"><span class="pre">skill</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">reference=None</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">threshold=None</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.skill" title="Link to this definition"></a></dt>
+<dd><p>Generate a pd.DataFrame with the table of skills of various simulations. The skill metrics are:</p>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li><p>Mean Bias Error (bias)</p></li>
+<li><p>Root Mean Squared Error (rmse)</p></li>
+<li><p>Correlation Coefficient (r2)</p></li>
+<li><p>Standard Deviation (std)</p></li>
+<li><p>MSE-based Skill Score (ssmse)</p></li>
+<li><p>Heidke Skill Score (hss)</p></li>
+<li><p>Brier Score (bs)</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">param reference<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Time series of a reference model to compare when calculating SSMSE and HSS.</p>
+</dd>
+<dt class="field-even">param threshold<span class="colon">:</span></dt>
+<dd class="field-even"><p>Threshold to use when computing the HSS and BS</p>
+</dd>
+<dt class="field-odd">type referece<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame or None</p>
+</dd>
+<dt class="field-even">type threshold<span class="colon">:</span></dt>
+<dd class="field-even"><p>float or None</p>
+</dd>
+<dt class="field-odd">return<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(observation_std,</span> <span class="pre">skill_table)</span></code>, Standard deviation of the observations and table of each skill score for each simulation.</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>(float, pd.DataFrame)</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.taylor">
+<span class="sig-name descname"><span class="pre">taylor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.taylor" title="Link to this definition"></a></dt>
+<dd><p>Calls <code class="docutils literal notranslate"><span class="pre">.skill()</span></code> method and computes the Taylor diagram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>fig, ax</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.annual_cycle">
+<span class="sig-name descname"><span class="pre">annual_cycle</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">grouping</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.annual_cycle" title="Link to this definition"></a></dt>
+<dd><p>Plot the annual cycle of the reconstructions, reanalysis and observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grouping</strong> (<em>str</em><em> or </em><em>None</em>) – (Default=”mean”) Monthly grouping to plot in the cylce. Options=(“sum”, “mean”, “median”, “std”)</p></li>
+<li><p><strong>color</strong> (<em>dict</em><em> or </em><em>None</em>) – dict of which color to use (values) with each dataset (keys)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analysis.rascal.analysis.RSkill.qqplot">
+<span class="sig-name descname"><span class="pre">qqplot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#analysis.rascal.analysis.RSkill.qqplot" title="Link to this definition"></a></dt>
+<dd><p>Quantile-Quantile plot</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-indices">
+<span id="indices-py"></span><h2>indices.py<a class="headerlink" href="#module-indices" title="Link to this heading"></a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">synopsis<span class="colon">:</span></dt>
+<dd class="field-odd"><p>This module contain the principal classes and functions to calculate relevant climatic indices</p>
+</dd>
+</dl>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">rascal.indices.CIndex()</span></code> class to retrieve relevant climatic indices based on:
+Data, C. (2009). Guidelines on analysis of extremes in a changing climate in support of informed decisions for adaptation. World Meteorological Organization.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rascal.analysis.</span></span><span class="sig-name descname"><span class="pre">CIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pd.DataFrame</em>) – Time series containing the relevant variables for the index calculation.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.fd">
+<span class="sig-name descname"><span class="pre">fd</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.fd" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TN (daily minimum temperature) &lt; 0°C
+Let TNij be the daily minimum temperature on day i in period j. Count the number of days where TNij &lt; 0°C.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.su">
+<span class="sig-name descname"><span class="pre">su</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.su" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TX (daily maximum temperature) &gt; 25°C
+Let TXij be the daily maximum temperature on day i in period j. Count the number of days where TXij &gt; 25°C.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.id">
+<span class="sig-name descname"><span class="pre">id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.id" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TX &lt; 0°C
+Let TXij be the daily maximum temperature on day i in period j. Count the number of days where TXij &lt; 0°C.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tr">
+<span class="sig-name descname"><span class="pre">tr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tr" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TN &gt; 20°C
+Let TNij be the daily minimum temperature on day i in period j. Count the number of days where TNij &gt; 20°C.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.gsl">
+<span class="sig-name descname"><span class="pre">gsl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.gsl" title="Link to this definition"></a></dt>
+<dd><p>Annual count of days between first span of at least six days where TG (daily mean temperature) &gt; 5°C and first span
+in second half of the year of at least six days where TG &lt; 5°C.
+Let TGij be the daily mean temperature on day i in period j. Count the annual (1 Jan to 31 Dec in
+Northern Hemisphere, 1 July to 30 June in Southern Hemisphere) number of days between the first
+occurrence of at least six consecutive days where TGij &gt; 5°C and the first occurrence after 1 July (1 Jan
+in Southern Hemisphere) of at least six consecutive days where TGij &lt; 5°C.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.txx">
+<span class="sig-name descname"><span class="pre">txx</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.txx" title="Link to this definition"></a></dt>
+<dd><p>Monthly maximum value of daily maximum temperature:
+Let TXik be the daily maximum temperature on day i in month k. The maximum daily maximum
+temperature is then TXx = max (TXik).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tnx">
+<span class="sig-name descname"><span class="pre">tnx</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tnx" title="Link to this definition"></a></dt>
+<dd><p>Monthly maximum value of daily minimum temperature:
+Let TNik be the daily minium temperature on day i in month k. The maximum daily minimum temperature
+is then TNx = max (TNik).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.txn">
+<span class="sig-name descname"><span class="pre">txn</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.txn" title="Link to this definition"></a></dt>
+<dd><p>Monthly minimum value of daily maximum temperature:
+Let TXik be the daily maximum temperature on day i in month k. The minimum daily maximum
+temperature is then TXn = min (TXik)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tnn">
+<span class="sig-name descname"><span class="pre">tnn</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tnn" title="Link to this definition"></a></dt>
+<dd><p>Monthly minimum value of daily minimum temperature:
+Let TNik be the daily minimum temperature on day i in month k. The minimum daily minimum
+temperature is then TNn = min (TNik)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tn10p">
+<span class="sig-name descname"><span class="pre">tn10p</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tn10p" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TN &lt; 10th percentile
+Let TNij be the daily minimum temperature on day i in period j and let TNin10 be the calendar day 10th
+percentile of daily minimum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where TNij &lt; TNin10.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tx10p">
+<span class="sig-name descname"><span class="pre">tx10p</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tx10p" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TX &lt; 10th percentile
+Let TXij be the daily maximum temperature on day i in period j and let TXin10 be the calendar day 10th
+percentile of daily maximum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where TXij &lt; TXin10</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tn90p">
+<span class="sig-name descname"><span class="pre">tn90p</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tn90p" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TN &gt; 90th percentile
+Let TNij be the daily minimum temperature on day i in period j and let TNin90 be the calendar day 90th
+percentile of daily minimum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where TNij &gt; TNin90</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.tx90p">
+<span class="sig-name descname"><span class="pre">tx90p</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.tx90p" title="Link to this definition"></a></dt>
+<dd><p>Count of days where TX &gt; 90th percentile
+Let TXij be the daily maximum temperature on day i in period j and let TXin90 be the calendar day 90th
+percentile of daily maximum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where TXij &gt; TXin90.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.wsdi">
+<span class="sig-name descname"><span class="pre">wsdi</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.wsdi" title="Link to this definition"></a></dt>
+<dd><p>Count of days in a span of at least six days where TX &gt; 90th percentile
+Let TXij be the daily maximum temperature on day i in period j and let TXin90 be the calendar day 90th
+percentile of daily maximum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where, in intervals of at least six
+consecutive days TXij &gt; TXin90.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.csdi">
+<span class="sig-name descname"><span class="pre">csdi</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.csdi" title="Link to this definition"></a></dt>
+<dd><p>Count of days in a span of at least six days where TN &gt; 10th percentile
+Let TNij be the daily minimum temperature on day i in period j and let TNin10 be the calendar day 10th
+percentile of daily minimum temperature calculated for a five-day window centred on each calendar day
+in the base period n (1961-1990). Count the number of days where, in intervals of at least six
+consecutive days TNij &lt; TNin10.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.dtr">
+<span class="sig-name descname"><span class="pre">dtr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.dtr" title="Link to this definition"></a></dt>
+<dd><p>Mean difference between TX and TN (°C)
+Let TXij and TNij be the daily maximum and minium temperature on day i in period j. If I represents the
+total number of days in j then the mean diurnal temperature range in period j DTRj = sum (TXij - TNij) / I.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.rx1day">
+<span class="sig-name descname"><span class="pre">rx1day</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.rx1day" title="Link to this definition"></a></dt>
+<dd><p>Highest precipitation amount in one-day period
+Let RRij be the daily precipitation amount on day i in period j. The maximum one-day value for period j is
+RX1dayj = max (RRij).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.rx5day">
+<span class="sig-name descname"><span class="pre">rx5day</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.rx5day" title="Link to this definition"></a></dt>
+<dd><p>Highest precipitation amount in five-day period
+Let RRkj be the precipitation amount for the five-day interval k in period j, where k is defined by the last
+day. The maximum five-day values for period j are RX5dayj = max (RRkj)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.sdii">
+<span class="sig-name descname"><span class="pre">sdii</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.sdii" title="Link to this definition"></a></dt>
+<dd><p>Mean precipitation amount on a wet day
+Let RRij be the daily precipitation amount on wet day w (RR ≥ 1 mm) in period j. If W represents the
+number of wet days in j then the simple precipitation intensity index SDIIj = sum (RRwj) / W.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.r10mm">
+<span class="sig-name descname"><span class="pre">r10mm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.r10mm" title="Link to this definition"></a></dt>
+<dd><p>Count of days where RR (daily precipitation amount) ≥ 10 mm
+Let RRij be the daily precipitation amount on day i in period j. Count the number of days where RRij ≥ 10 mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.r20mm">
+<span class="sig-name descname"><span class="pre">r20mm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.r20mm" title="Link to this definition"></a></dt>
+<dd><p>Count of days where RR ≥ 20 mm
+Let RRij be the daily precipitation amount on day i in period j. Count the number of days where RRij ≥ 20 mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.rnnmm">
+<span class="sig-name descname"><span class="pre">rnnmm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.rnnmm" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>threshold</strong> (<em>float</em>) – Precipitation threshold</p>
+</dd>
+</dl>
+<p>Count of days where RR ≥ user-defined threshold in mm
+Let RRij be the daily precipitation amount on day i in period j. Count the number of days where RRij ≥ nn mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.cdd">
+<span class="sig-name descname"><span class="pre">cdd</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.cdd" title="Link to this definition"></a></dt>
+<dd><p>Maximum length of dry spell (RR &lt; 1 mm)
+Let RRij be the daily precipitation amount on day i in period j. Count the largest number of consecutive
+days where RRij &lt; 1 mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.cwd">
+<span class="sig-name descname"><span class="pre">cwd</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.cwd" title="Link to this definition"></a></dt>
+<dd><p>Maximum length of wet spell (RR ≥ 1 mm)
+Let RRij be the daily precipitation amount on day i in period j. Count the largest number of consecutive
+days where RRij ≥ 1 mm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.r95ptot">
+<span class="sig-name descname"><span class="pre">r95ptot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.r95ptot" title="Link to this definition"></a></dt>
+<dd><p>Precipitation due to very wet days (&gt; 95th percentile)
+Let RRwj be the daily precipitation amount on a wet day w (RR ≥ 1 mm) in period j and let RRwn95 be
+the 95th percentile of precipitation on wet days in the base period n (1961-1990). Then R95pTOTj = sum (RRwj),
+where RRwj &gt; RRwn95.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.r99ptot">
+<span class="sig-name descname"><span class="pre">r99ptot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.r99ptot" title="Link to this definition"></a></dt>
+<dd><p>Precipitation due to extremely wet days (&gt; 99th percentile)
+Let RRwj be the daily precipitation amount on a wet day w (RR ≥ 1 mm) in period j and let RRwn99 be
+the 99th percentile of precipitation on wet days in the base period n (1961-1990). Then R99pTOTj = sum (RRwj),
+where RRwj &gt; RRwn99</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="indices.rascal.analysis.CIndex.prcptot">
+<span class="sig-name descname"><span class="pre">prcptot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#indices.rascal.analysis.CIndex.prcptot" title="Link to this definition"></a></dt>
+<dd><p>Total precipitation in wet days (&gt; 1 mm)
+Let RRwj be the daily precipitation amount on a wet day w (RR ≥ 1 mm) in period j. Then PRCPTOTj = sum (RRwj)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>idx</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="advanced.html" class="btn btn-neutral float-left" title="Advanced Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Alvaro Gonzalez-Cervera.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

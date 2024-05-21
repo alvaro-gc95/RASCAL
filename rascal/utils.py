@@ -25,7 +25,7 @@ prompt_timer = True
 
 
 class Preprocess:
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: pd.DataFrame):
         self._obj = pandas_obj
 
     @staticmethod
@@ -47,10 +47,13 @@ class Preprocess:
         if substitute:
             self._obj.drop(['WSPD', 'WDIR'], axis=1, inplace=True)
 
-    def clear_low_radiance(self, rad_thr=200):
+    def clear_low_radiance(self, rad_thr: float = None):
         """
-        Delete Shortwave incoming radiance below the "night" threshold
+        Delete Shortwave incoming radiance below the "night" threshold. Default threshold = 200 W/m²
         """
+        if rad_thr is None:
+            rad_thr = 200
+
         self._check_variable_in_obj(self._obj, ['RADS01'])
 
         self._obj['RADS01'] = self._obj['RADS01'].where(self._obj['RADS01'] >= rad_thr, np.nan)
@@ -75,7 +78,7 @@ class Preprocess:
 
         del self._obj['E'], self._obj['ES']
 
-    def get_daily_variables(self, skipna=True, grouping=None):
+    def get_daily_variables(self, skipna: bool = True, grouping: str = None) -> pd.DataFrame:
         """
         Get relevant daily climatological variables as DataFrame: Maximum, minimum and mean temperature, maximum and
         mean wind velocity, total solar radiation, total precipitation.
@@ -103,13 +106,13 @@ class Preprocess:
             daily_variables = pd.concat([daily_variables, tmean], axis=1)
 
         elif 'TMPA' in self._obj.columns:
-            tmax = nan_resampler(self._obj['TMAX'], freq='1D', grouping="max", skipna=skipna)
+            tmax = nan_resampler(self._obj['TMPA'], freq='1D', grouping="max", skipna=skipna)
             tmax = tmax.squeeze().rename("TMAX")
 
-            tmin = nan_resampler(self._obj['TMIN'], freq='1D', grouping="min", skipna=skipna)
+            tmin = nan_resampler(self._obj['TMPA'], freq='1D', grouping="min", skipna=skipna)
             tmin = tmin.squeeze().rename("TMIN")
 
-            tmean = nan_resampler(self._obj['TMEAN'], freq='1D', grouping="mean", skipna=skipna)
+            tmean = nan_resampler(self._obj['TMPA'], freq='1D', grouping="mean", skipna=skipna)
             tmean = tmean.squeeze().rename("TMEAN")
 
             # tamp = abs(tmax - tmin)
@@ -175,12 +178,12 @@ def timer_func(func: typing.Callable = None, prompt: bool = True) -> typing.Call
     return wrap_func
 
 
-def save_object(obj, filename):
+def save_object(obj, filename: str) -> None:
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
 
-def open_yaml(yaml_path):
+def open_yaml(yaml_path: str):
     """
     Read the configuration yaml file.
     :param yaml_path: str. Path of the yaml file
@@ -201,7 +204,7 @@ def open_yaml(yaml_path):
         return configuration_file
 
 
-def clean_dataset(df):
+def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """
     Delete conflictive values from dataset (NaN or inf)
     :param df: DataFrame or Series.
@@ -209,7 +212,8 @@ def clean_dataset(df):
     """
     assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
     df.dropna(inplace=True)
-    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis="columns")
+
     return df[indices_to_keep].astype(np.float64)
 
 
@@ -229,7 +233,7 @@ def get_common_index(df1: pd.DataFrame, df2: pd.DataFrame):
     return df1, df2
 
 
-def get_validation_window(test_date, dates, window_size, window_type='centered'):
+def get_validation_window(test_date, dates, window_size: int, window_type: str = 'centered'):
     """
     Get a window of dates around an original one.
     :param test_date: Datetime. central date of the window.
@@ -264,7 +268,7 @@ def get_validation_window(test_date, dates, window_size, window_type='centered')
         return validation_window
 
 
-def open_observations(path: str, variables: list):
+def open_observations(path: str, variables: list) -> pd.DataFrame:
     """
     Get and rename all observational data from one directory as pandas DataFrame.
     :param path: str. Path of the files to open.
@@ -294,14 +298,14 @@ def open_observations(path: str, variables: list):
         return data
 
 
-def get_daily_data(path: str, variable: str, skipna=False):
+def get_daily_data(path: str, variable: str, skipna=False) -> pd.DataFrame:
     observations = open_observations(path, [variable])
     daily_observations = Preprocess(observations).get_daily_variables(skipna=skipna)
     return daily_observations
 
 
 @timer_func(prompt=prompt_timer)
-def get_files(nwp_path, variables, dates, file_format):
+def get_files(nwp_path: str, variables: list, dates: list, file_format: str) -> dict:
     """
     Get all files
     :param nwp_path: str. Path to the grib files.
@@ -332,7 +336,7 @@ def get_files(nwp_path, variables, dates, file_format):
     return all_file_paths
 
 
-def group_data(ds, grouping=None):
+def group_data(ds, grouping: str = None):
     """
     Group data of a dataframe. It can group data in
     By default grouping is None, then the central hour of the day is taken as the representative time of the day.
@@ -385,7 +389,7 @@ def clean_coordinates(ds):
 
 
 @timer_func(prompt=prompt_timer)
-def open_data(files_paths, grouping=None, number=None, domain=None):
+def open_data(files_paths: list, grouping: str = None, number: int = None, domain: list = None) -> xr.Dataset:
     """
     Combine a list of files (.grib or .nc usually) in one DataArray.
     :param files_paths: list. Paths of the grib file to open
@@ -431,7 +435,12 @@ def open_data(files_paths, grouping=None, number=None, domain=None):
     return combined_ds
 
 
-def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, point_latitude):
+def get_nearest_gridpoint(
+        grid_longitudes: np.array,
+        grid_latitudes: np.array,
+        point_longitude: float,
+        point_latitude: float
+) -> (list, list):
     """
     Find the nearest grid point in a dataset
     :param grid_longitudes: array.
@@ -449,7 +458,14 @@ def get_nearest_gridpoint(grid_longitudes, grid_latitudes, point_longitude, poin
     return ilat, ilon
 
 
-def crop_domain(data, lat_min, lat_max, lon_min, lon_max, grid_buffer=None):
+def crop_domain(
+        data: xr.Dataset,
+        lat_min: float,
+        lat_max: float,
+        lon_min: float,
+        lon_max: float,
+        grid_buffer: list = None
+) -> xr.Dataset:
     """
     Crop dataset domain. Works with regular grids. Irregular grids are on wishlist.
     :param data: DataSet.
@@ -540,7 +556,11 @@ def separate_concatenated_components(data):
     return data
 
 
-def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series, precipitation_threshold=0.25):
+def get_humidity_to_precipitation(
+        humidity: pd.Series,
+        precipitation: pd.Series,
+        precipitation_threshold: float = None
+):
     """
     Calculate the relative humidity threshold for precipitation.
     :param humidity: pd.Series.
@@ -548,6 +568,9 @@ def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series,
     :param precipitation_threshold: float. Minimum precipitation threshold.
     :return:
     """
+    if precipitation_threshold is None:
+        precipitation_threshold = 0.25
+
     # Get only precipitation above the minimum threshold
     precipitation = precipitation.mask(precipitation < precipitation_threshold)
 
@@ -571,7 +594,7 @@ def get_humidity_to_precipitation(humidity: pd.Series, precipitation: pd.Series,
     return lower_adjacent_value
 
 
-def table_to_series(df: pd.DataFrame, new_index):
+def table_to_series(df: pd.DataFrame, new_index) -> pd.DataFrame:
     """
     Transform a table of hourly values per month to a time series.
     """
@@ -586,7 +609,7 @@ def table_to_series(df: pd.DataFrame, new_index):
     return climatology_series
 
 
-def nan_resampler(df, grouping, freq, skipna=True):
+def nan_resampler(df: pd.DataFrame, grouping: str, freq: str, skipna: bool = True) -> pd.DataFrame:
     """
     The resampler of pandas substitutes the NaNs by zero. This is a cheap solution to keep the NaNs when using the
     most popular groupings.

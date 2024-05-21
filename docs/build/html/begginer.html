@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Begginer Tutorials &mdash; RASCAL 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8d563738"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Advanced Tutorials" href="advanced.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RASCAL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Begginer Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prepare-your-data-folder-structure">Prepare your data: Folder Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#make-a-reconstruction">Make a reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code.html">Code Overview: Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RASCAL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Begginer Tutorials</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/begginer.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="begginer-tutorials">
+<h1>Begginer Tutorials<a class="headerlink" href="#begginer-tutorials" title="Link to this heading"></a></h1>
+<section id="prepare-your-data-folder-structure">
+<h2>Prepare your data: Folder Structure<a class="headerlink" href="#prepare-your-data-folder-structure" title="Link to this heading"></a></h2>
+<p>The observational data must follow this structure:</p>
+<div class="line-block">
+<div class="line">/observation_directory/</div>
+<div class="line">├── /variable/</div>
+<div class="line">│ ├── variable.csv</div>
+<div class="line">│ ├── meta.csv</div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">variable</span></code> is the name of the variable to reconstruct (ex: TMEAN, PCP, WSPD …)
+and <code class="docutils literal notranslate"><span class="pre">meta.csv</span></code> is a .csv file that contains the columns [code, name, latitude, longitude, latitude]
+The data must be in daily or sub-daily resolution</p>
+<p>The reanalysis data must follow this structure:</p>
+<div class="line-block">
+<div class="line">/reanalysis_directory/</div>
+<div class="line">├── /y_YYYY/</div>
+<div class="line">│ ├── YYYY_level_variable.nc</div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">YYYY</span></code> is the year of the data,
+<code class="docutils literal notranslate"><span class="pre">level</span></code> the level of the variable and
+<code class="docutils literal notranslate"><span class="pre">variable</span></code> the name of the predictor variable.
+The reanalysis data can be in netCDF or GRIB format
+The data must be in daily or sub-daily resolution</p>
+</section>
+<section id="make-a-reconstruction">
+<h2>Make a reconstruction<a class="headerlink" href="#make-a-reconstruction" title="Link to this heading"></a></h2>
+<p>RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill. It can be imported as:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">import rascal</span>
+</pre></div>
+</div>
+<p><strong>1) Get observational data</strong></p>
+<blockquote>
+<div><p>To load the observational data (in daily or sub-daily resolution) and the station metadata, the data is loaded from a CSV file with the same name as the desired variable, and a meta.csv file containing the name, code, altitude, longitude and latitude of the station</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">station = rascal.analogs.Station(path=&#39;./data/observations/station/&#39;)</span>
+<span class="go">station_data = station.get_data(variable=&#39;PCP&#39;)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl>
+<dt><strong>2) Load and process predictor fields from large-scale models</strong></dt><dd><p>To load the reanalysis or large-scale model data we use the Predictor class. This example shows how to use the Total Column of Water Vapor Flux from the ERA20C reanalysis. In this reanalysis the components U and V of the TCWVF are named ‘71.162’ and ‘72.162’. The predictor is set or the years 1900-1910, for each day only the 12:00 is selected through the <code class="docutils literal notranslate"><span class="pre">grouping</span></code> argument, the domain is 80ºN-20ºN, 60ºW-20ºE. The <code class="docutils literal notranslate"><span class="pre">mosaic</span></code> argument set to <em>True</em> concatenates both components U and V in the longitude axis to obtain a single compound variable of size <em>(time x 2*longitude x latitude)</em>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"> # </span>Get<span class="w"> </span>file<span class="w"> </span>paths
+<span class="go"> predictor_files = rascal.utils.get_files(</span>
+<span class="go">     nwp_path=&#39;./data/reanalysis/era20c/&#39;,</span>
+<span class="go">     variables=[&#39;71.162&#39;, &#39;72.162&#39;],</span>
+<span class="go">     dates=[1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910],</span>
+<span class="go">     file_format=&quot;.grib&quot;</span>
+<span class="go"> )</span>
+
+<span class="gp"> # </span>Generate<span class="w"> </span>Predictor
+<span class="go"> predictors = rascal.analogs.Predictor(</span>
+<span class="go">    paths=predictor_files,</span>
+<span class="go">    grouping=&#39;12h_1D_mean&#39;,</span>
+<span class="go">    lat_min=20,</span>
+<span class="go">    lat_max=80,</span>
+<span class="go">    lon_min=-60,</span>
+<span class="go">    lon_max=20,</span>
+<span class="go">    mosaic=True</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>3) Perform Principal Component Analysis on the predictor fields</strong></dt><dd><p>The Principal Component Analysis (PCA) of the compund variable standardized anomalies, with 4 principal components and for the conventionan seasons DJF, MAM, JJA, and SON,  is conducted as follows:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">predictor_pcs = predictors.pcs(</span>
+<span class="go">   npcs=n_components,</span>
+<span class="go">   seasons=[[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]],</span>
+<span class="go">   standardize=True,</span>
+<span class="go">   path=&quot;./tmp/&quot;</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>4) Look at the PC space to find analog days in the historical data</strong></dt><dd><p>After performing the PCA, the obtained values of the principal componets act as the predictor used to perform the reconstructions. First the analog days, in order of euclidean distance, are found.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">analogs = rascal.analogs.Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>5) Reconstruct or extend missing observational data</strong></dt><dd><p>Later, the reconstuctions are made using one of the following similarity methods: <code class="docutils literal notranslate"><span class="pre">closest</span></code>, <code class="docutils literal notranslate"><span class="pre">average</span></code>, or <code class="docutils literal notranslate"><span class="pre">quantilemap</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">reconstruction = analogs.reconstruct(</span>
+<span class="go">    pool_size=30,</span>
+<span class="go">    method=&#39;closest&#39;</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="advanced.html" class="btn btn-neutral float-right" title="Advanced Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Alvaro Gonzalez-Cervera.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

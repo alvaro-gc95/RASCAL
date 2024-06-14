@@ -1,22 +1,28 @@
 from setuptools import setup, find_packages
 import os
 
+DISTNAME = "rascal-ties"
 VERSION = "1.0.0"
 DESCRIPTION = "Open-source tool for climatological time series reconstruction and extension"
-
+PROJECT_URLS = {
+    "Documentation": "https://rascalv100.readthedocs.io/en/latest/",
+    "Source Code": "https://github.com/alvaro-gc95/RASCAL"
+}
+python_requires = ">=3.10"
+required_python_version = (3, 10)
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
 setup(
-    name="rascal-ties",
+    name=DISTNAME,
     version=VERSION,
     author="Alvaro Gonzalez-Cervera",
-    author_email="<alvaro@intermet.es>",
+    author_email="<alvaro@intermjosiah_carberry@brown.eduet.es>",
     description=DESCRIPTION,
     readme="README.md",
-    packages=find_packages(),
+    packages=["rascal"],
     install_requires=[
         "numpy==1.26.4",
         "pandas==2.2.1",
@@ -34,6 +40,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    python_requires=python_requires,
     url="https://github.com/alvaro-gc95/RASCAL",
-    long_description=read('README.md')
+    long_description=read('README.md'),
+    download_url="https://github.com/alvaro-gc95/RASCAL",
 )

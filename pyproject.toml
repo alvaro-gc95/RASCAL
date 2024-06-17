@@ -27,7 +27,9 @@ dependencies = [
     "eofs>=1.4.1",
     "matplotlib>=3.5.5",
     "sphinx-rtd-theme>=1.2.2",
-    "sphinx>=7.3.7"
+    "sphinx>=7.3.7",
+    "cfgrib>=0.9.12.0",
+    "netCDF4>=1.7.0"
 ]
 
 [tool.setuptools.dynamic]

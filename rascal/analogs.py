@@ -207,7 +207,7 @@ class Predictor:
         if training is not None:
             training_dates = sorted(list(set(training) & set(self.data["time"].values)))
             testing_dates = sorted(list(set(training) | set(self.data["time"].values)))
-            testing_anomalies = get_seasonal_anomalies(
+            testing_anomalies, testing_mean, testing_std = get_seasonal_anomalies(
                 self.data.sel(time=testing_dates),
                 seasons=seasons,
                 standardize=standardize,
@@ -217,7 +217,7 @@ class Predictor:
             training_dates = self.data["time"].values
             testing_dates = False
 
-        training_anomalies = get_seasonal_anomalies(
+        training_anomalies, training_mean, training_std = get_seasonal_anomalies(
             self.data.sel(time=training_dates),
             seasons=seasons,
             standardize=standardize,
@@ -225,12 +225,16 @@ class Predictor:
         )
 
         if project is not None:
-            anomalies_to_project = get_seasonal_anomalies(
-                project,
-                seasons=seasons,
-                standardize=standardize,
-                mean_period=training_dates
-            )
+            anomalies_to_project = []
+            for i, season in enumerate(seasons):
+                season_dates = [date for date in pd.to_datetime(project["time"].values) if date.month in season]
+                seasonal_projection = project.sel(time=season_dates)
+                projection_anomalies = seasonal_projection - training_mean
+                if standardize:
+                    projection_anomalies = projection_anomalies / projection_anomalies.std(dim='time')
+                projection_anomalies = projection_anomalies.expand_dims({"season": [i]})
+                anomalies_to_project.append(projection_anomalies.to_dataset(name="anomalies"))
+            anomalies_to_project = xr.merge(anomalies_to_project)
 
         with ProgressBar():
             training_anomalies = training_anomalies.compute()
@@ -452,6 +456,8 @@ def get_seasonal_anomalies(data: xr.Dataset, seasons: list, standardize: bool, m
     :param standardize: bool. Standardize anomalies. Default = True
     :param mean_period: list. dates to use as the mean climatology period
     :return: anomalies. xr.DataSet. dims = [time, latitude, longitude, season]
+    :return: mean. xr.DataSet. dims = [latitude, longitude, season]
+    :return: std. xr.DataSet. dims = [latitude, longitude, season]
     """
 
     if seasons is None:
@@ -463,19 +469,29 @@ def get_seasonal_anomalies(data: xr.Dataset, seasons: list, standardize: bool, m
 
     # Get the seasonal anomalies of the predictor field
     anomalies = []
+    mean = []
+    std = []
     for i, season in enumerate(seasons):
         season_dates = [date for date in pd.to_datetime(mean_period) if date.month in season]
         seasonal_predictors = data.sel(time=season_dates)
-        seasonal_anomalies = rascal.analogs.calculate_anomalies(
+        seasonal_anomalies, seasonal_mean, seasonal_std = rascal.analogs.calculate_anomalies(
             seasonal_predictors,
             standardize=standardize,
             mean_period=season_dates
         )
         seasonal_anomalies = seasonal_anomalies.expand_dims({"season": [i]})
-        anomalies.append(seasonal_anomalies.to_dataset(name="anomalies"))
-    anomalies = xr.merge(anomalies)
+        seasonal_mean = seasonal_mean.expand_dims({"season": [i]})
+        seasonal_std = seasonal_std.expand_dims({"season": [i]})
 
-    return anomalies
+        anomalies.append(seasonal_anomalies.to_dataset(name="anomalies"))
+        mean.append(seasonal_mean.to_dataset(name="mean"))
+        std.append(seasonal_std.to_dataset(name="standard_deviation"))
+
+    anomalies = xr.merge(anomalies)
+    mean = xr.merge(mean)
+    std = xr.merge(std)
+
+    return anomalies, mean, std
 
 
 def calculate_anomalies(data_array: xr.DataArray, standardize: bool = False, mean_period: list = None) -> xr.Dataset:
@@ -483,14 +499,15 @@ def calculate_anomalies(data_array: xr.DataArray, standardize: bool = False, mea
     :param data_array: DataArray.
     :param standardize: bool. Default=False. If True divide the anomalies by its standard deviation.
     :param mean_period: pd.DatetimeIndex. Dates to use to calculate the mean
-    :return anomalies: DataArray.
+    :return anomalies, mean, std: DataArray.
     """
     mean = data_array.sel(time=mean_period).mean(dim='time')
     anomalies = data_array - mean
+    std = anomalies.std(dim='time')
     if standardize:
-        anomalies = anomalies / anomalies.std(dim='time')
+        anomalies = anomalies / std
 
-    return anomalies
+    return anomalies, mean, std
 
 
 def get_pca_solver(data_array, file_name: str, overwrite: bool = True):

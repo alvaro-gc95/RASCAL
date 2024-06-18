@@ -306,32 +306,34 @@ class Predictor:
             pcs.append(seasonal_pcs)
 
             if testing_dates:
-                testing_pcs = pcs_solver.projectField(
-                    seasonal_test_anomalies,
-                    neofs=npcs,
-                    eofscaling=pcscaling,
-                    weighted=True
-                )
-                testing_pcs = testing_pcs.expand_dims({"season": [i]})
-                testing_pcs = testing_pcs.rename("pcs")
-                pcs.append(testing_pcs)
+                if seasonal_test_anomalies.shape[0] > 0:
+                    testing_pcs = pcs_solver.projectField(
+                        seasonal_test_anomalies,
+                        neofs=npcs,
+                        eofscaling=pcscaling,
+                        weighted=True
+                    )
+                    testing_pcs = testing_pcs.expand_dims({"season": [i]})
+                    testing_pcs = testing_pcs.rename("pcs")
+                    pcs.append(testing_pcs)
 
             if project is not None:
                 seasonal_proj_anomalies = anomalies_to_project.sel(season=i).dropna(dim="time")
                 seasonal_proj_anomalies = seasonal_proj_anomalies.to_array().squeeze(dim="variable")
-                projected_pcs = pcs_solver.projectField(
-                    seasonal_proj_anomalies,
-                    neofs=npcs,
-                    eofscaling=pcscaling,
-                    weighted=True
-                )
-                projected_pcs = projected_pcs.expand_dims({"season": [i]})
-                projected_pcs = projected_pcs.rename("pcs")
-                pcs.append(projected_pcs)
+                if seasonal_proj_anomalies.shape[0] > 0:
+                    projected_pcs = pcs_solver.projectField(
+                        seasonal_proj_anomalies,
+                        neofs=npcs,
+                        eofscaling=pcscaling,
+                        weighted=True
+                    )
+                    projected_pcs = projected_pcs.expand_dims({"season": [i]})
+                    projected_pcs = projected_pcs.rename("pcs")
+                    pcs.append(projected_pcs)
 
         pcs = xr.merge(pcs)
         pcs = pcs.sortby('time')
-        print(pcs)
+
         return pcs
 
 

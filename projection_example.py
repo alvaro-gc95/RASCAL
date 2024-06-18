@@ -115,7 +115,7 @@ overwrite_pcs = config.get("overwrite_pcs")
 # Projection Years
 projection_data_path = config.get("reanalysis_path")
 projection_start = datetime.datetime(2012, 1, 1, 0, 0, 0)
-projection_end = datetime.datetime(2012, 12, 31, 0, 0, 0)
+projection_end = datetime.datetime(2012, 3, 31, 0, 0, 0)
 projection_dates = pd.date_range(start=projection_start, end=projection_end, freq="1D")
 projection_years = sorted(set([str(d.year) for d in projection_dates]))
 

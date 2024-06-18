@@ -59,7 +59,7 @@ class Predictor:
 
     def __init__(
             self,
-            paths: str,
+            paths: dict,
             grouping: str,
             lat_min: float,
             lat_max: float,
@@ -125,7 +125,7 @@ class Predictor:
             final_lon = variable_j['longitude'].values[-1]
             compound_predictor.append(variable_j)
 
-        compound_predictor = xr.combine_by_coords(compound_predictor)
+        compound_predictor = xr.combine_by_coords(compound_predictor, combine_attrs='drop_conflicts')
         compound_predictor["time"] = pd.to_datetime(compound_predictor["time"].values)
         compound_predictor = compound_predictor.to_array().squeeze()
 
@@ -205,17 +205,27 @@ class Predictor:
             overwrite = False
 
         if training is not None:
-            training_dates = sorted(list(set(training) & set(self.data["time"].values)))
-            testing_dates = sorted(list(set(training) | set(self.data["time"].values)))
-            testing_anomalies, testing_mean, testing_std = get_seasonal_anomalies(
-                self.data.sel(time=testing_dates),
-                seasons=seasons,
-                standardize=standardize,
-                mean_period=training_dates
-            )
+            training_dates = sorted(list(set(training) & set(pd.to_datetime(self.data["time"].values))))
+            if len(training_dates) == len(self.data["time"].values):
+                testing_dates = False
+                print("! Training period is all the available period. All the training period will be reconstructed ",
+                      "(From " + str(training_dates[0]) + " to " + str(training_dates[-1]) + ")")
+            else:
+                testing_dates = sorted(list(set(training) - set(pd.to_datetime(self.data["time"].values))))
+                print("! Training period: From " + str(training_dates[0]) + " to " + str(training_dates[-1]),
+                      ", Testing period: From " + str(testing_dates[0]) + " to " + str(testing_dates[-1]))
+
+                testing_anomalies, testing_mean, testing_std = get_seasonal_anomalies(
+                    self.data.sel(time=testing_dates),
+                    seasons=seasons,
+                    standardize=standardize,
+                    mean_period=training_dates
+                )
         else:
             training_dates = self.data["time"].values
             testing_dates = False
+            print("! No training period especified: "
+                  "Training period will be all the reanalysis period. All the training period will be reconstructed")
 
         training_anomalies, training_mean, training_std = get_seasonal_anomalies(
             self.data.sel(time=training_dates),
@@ -229,12 +239,13 @@ class Predictor:
             for i, season in enumerate(seasons):
                 season_dates = [date for date in pd.to_datetime(project["time"].values) if date.month in season]
                 seasonal_projection = project.sel(time=season_dates)
-                projection_anomalies = seasonal_projection - training_mean
+                projection_anomalies = seasonal_projection - training_mean.sel(season=[i])
                 if standardize:
                     projection_anomalies = projection_anomalies / projection_anomalies.std(dim='time')
-                projection_anomalies = projection_anomalies.expand_dims({"season": [i]})
-                anomalies_to_project.append(projection_anomalies.to_dataset(name="anomalies"))
+                anomalies_to_project.append(projection_anomalies)
             anomalies_to_project = xr.merge(anomalies_to_project)
+            print("! Add projection period to reconstruct: From " + str(anomalies_to_project["time"].values[0]) + " to "
+                  + str(anomalies_to_project["time"].values[-1]))
 
         with ProgressBar():
             training_anomalies = training_anomalies.compute()
@@ -295,22 +306,32 @@ class Predictor:
             pcs.append(seasonal_pcs)
 
             if testing_dates:
-                testing_pcs = pcs_solver.projectField(seasonal_test_anomalies)
+                testing_pcs = pcs_solver.projectField(
+                    seasonal_test_anomalies,
+                    neofs=npcs,
+                    eofscaling=pcscaling,
+                    weighted=True
+                )
                 testing_pcs = testing_pcs.expand_dims({"season": [i]})
+                testing_pcs = testing_pcs.rename("pcs")
                 pcs.append(testing_pcs)
 
             if project is not None:
-
                 seasonal_proj_anomalies = anomalies_to_project.sel(season=i).dropna(dim="time")
                 seasonal_proj_anomalies = seasonal_proj_anomalies.to_array().squeeze(dim="variable")
-
-                projected_pcs = pcs_solver.projectField(seasonal_proj_anomalies)
+                projected_pcs = pcs_solver.projectField(
+                    seasonal_proj_anomalies,
+                    neofs=npcs,
+                    eofscaling=pcscaling,
+                    weighted=True
+                )
                 projected_pcs = projected_pcs.expand_dims({"season": [i]})
+                projected_pcs = projected_pcs.rename("pcs")
                 pcs.append(projected_pcs)
 
         pcs = xr.merge(pcs)
         pcs = pcs.sortby('time')
-
+        print(pcs)
         return pcs
 
 

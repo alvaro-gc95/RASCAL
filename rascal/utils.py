@@ -389,10 +389,10 @@ def clean_coordinates(ds):
 
 
 @timer_func(prompt=prompt_timer)
-def open_data(files_paths: list, grouping: str = None, number: int = None, domain: list = None) -> xr.Dataset:
+def open_data(files_paths: dict, grouping: str = None, number: int = None, domain: list = None) -> xr.Dataset:
     """
     Combine a list of files (.grib or .nc usually) in one DataArray.
-    :param files_paths: list. Paths of the grib file to open
+    :param files_paths: dict. Paths of the grib file to open for each variable
     :param grouping: str. Default=None. Format = frequency_method. frequency=('hourly', 'daily', 'monthly', yearly').
     method=('sum', 'mean', 'min', 'max')
     :param number: int. Default=None. Ensemble member number (Only for ERA20CM products)

@@ -5,15 +5,15 @@
 ########################################################################################################################
 
 # Total period that spans the reanalysis data
-initial_year: 2007
+initial_year: 2005
 final_year: 2011
 
 # Training period: Period to use to calculate the PCA.
-training_start: [2007, 1, 1]
+training_start: [2006, 1, 1]
 training_end: [2011, 12, 31]
 
 # Test period: Period to reconstruct.
-test_start: [2007, 1, 1]
+test_start: [2005, 1, 1]
 test_end: [2011, 12, 31]
 
 # Input paths
@@ -28,11 +28,11 @@ plot_path: "./plots/"
 
 # Stations
 stations:
-  - "St02"
+  - "St03"
 
 # Variables to reconstruct
 variables:
-  - "TMIN"
+  - "TMEAN"
   # - "TMAX"
   # - "TMEAN"
   # - "WSPD"

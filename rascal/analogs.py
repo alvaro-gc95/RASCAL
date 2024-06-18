@@ -211,16 +211,9 @@ class Predictor:
                 print("! Training period is all the available period. All the training period will be reconstructed ",
                       "(From " + str(training_dates[0]) + " to " + str(training_dates[-1]) + ")")
             else:
-                testing_dates = sorted(list(set(training) - set(pd.to_datetime(self.data["time"].values))))
+                testing_dates = sorted(list(set(pd.to_datetime(self.data["time"].values)) - set(training_dates)))
                 print("! Training period: From " + str(training_dates[0]) + " to " + str(training_dates[-1]),
                       ", Testing period: From " + str(testing_dates[0]) + " to " + str(testing_dates[-1]))
-
-                testing_anomalies, testing_mean, testing_std = get_seasonal_anomalies(
-                    self.data.sel(time=testing_dates),
-                    seasons=seasons,
-                    standardize=standardize,
-                    mean_period=training_dates
-                )
         else:
             training_dates = self.data["time"].values
             testing_dates = False
@@ -233,6 +226,20 @@ class Predictor:
             standardize=standardize,
             mean_period=training_dates
         )
+
+        if testing_dates:
+            testing_anomalies = []
+            testing_dataset = self.data.sel(time=testing_dates)
+            for i, season in enumerate(seasons):
+                season_dates = [
+                    date for date in pd.to_datetime(testing_dataset["time"].values) if date.month in season
+                ]
+                seasonal_test = testing_dataset.sel(time=season_dates)
+                anomalies_test = seasonal_test - training_mean.sel(season=[i])
+                if standardize:
+                    anomalies_test = anomalies_test / anomalies_test.std(dim='time')
+                testing_anomalies.append(anomalies_test)
+            testing_anomalies = xr.merge(testing_anomalies)
 
         if project is not None:
             anomalies_to_project = []

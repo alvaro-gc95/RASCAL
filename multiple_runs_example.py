@@ -63,11 +63,11 @@ training_dates = pd.date_range(
 )
 
 # Reconstruction period
-test_start = config.get('test_start')
-test_end = config.get('test_end')
-test_dates = pd.date_range(
-    start=datetime.datetime(test_start[0], test_start[1], test_start[2]),
-    end=datetime.datetime(test_end[0], test_end[1], test_end[2]),
+reconstruction_start = config.get('reconstruction_start')
+reconstruction_end = config.get('reconstruction_end')
+reconstruction_dates = pd.date_range(
+    start=datetime.datetime(reconstruction_start[0], reconstruction_start[1], reconstruction_start[2]),
+    end=datetime.datetime(reconstruction_end[0], reconstruction_end[1], reconstruction_end[2]),
     freq='1D'
 )
 
@@ -255,7 +255,7 @@ if __name__ == '__main__':
             # This method does not depend on the size of the pool
             if method == "closest":
 
-                analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
+                analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstruction_dates)
                 reconstruction = analogs.reconstruct(
                     pool_size=min(pool_sizes),
                     method=method,
@@ -273,7 +273,7 @@ if __name__ == '__main__':
             elif method == "average":
 
                 for sample_size in sample_sizes:
-                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
+                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstruction_dates)
                     reconstruction = analogs.reconstruct(
                         pool_size=min(pool_sizes),
                         method=method,
@@ -294,7 +294,7 @@ if __name__ == '__main__':
             elif method == "quantilemap":
 
                 for pool_size in pool_sizes:
-                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
+                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstruction_dates)
                     reconstruction = analogs.reconstruct(
                         pool_size=pool_size,
                         method=method,

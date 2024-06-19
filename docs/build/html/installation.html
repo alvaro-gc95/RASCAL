@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; RASCAL 1.0.0 documentation</title>
+  <title>Installation &mdash; RASCAL 1.0.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
 
   
   <!--[if lt IE 9]>
@@ -15,9 +16,11 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=8d563738"></script>
+        <script src="_static/documentation_options.js?v=baaebd52"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="_static/copybutton.js?v=a5fa425f"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -46,9 +49,9 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#required-dependencies">Required dependencies</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#via-pypi">Via PyPi</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#via-github">Via GitHub</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="begginer.html">Begginer Tutorials</a></li>
@@ -82,30 +85,13 @@
              
   <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
-<section id="via-pypi">
-<h2>Via PyPi<a class="headerlink" href="#via-pypi" title="Link to this heading"></a></h2>
-<p>RASCAL can be installed via PyPi:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(.venv)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>rascal-ties
+<p>RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts wioth its required dependencies.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>rascal_env
+<span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>activate<span class="w"> </span>rascal_env
 </pre></div>
 </div>
-</section>
-<section id="via-github">
-<h2>Via GitHub<a class="headerlink" href="#via-github" title="Link to this heading"></a></h2>
-<p>RASCAL can be used via GitHub:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(.venv)</span> <span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/alvaro-gc95/RASCAL
-</pre></div>
-</div>
-<p>The GitHub repository also contains the following scripts:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">multiple_runs_example.py</span></code> to automatize running several configurations of similarity methods and pool sizes for various stations and variables.
-This can be configured through the <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> file</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">RASCAL_evaluation.ipynb</span></code> a Jupyter Notebook to plot and validate the reconstructions</p></li>
-</ul>
-</div></blockquote>
-</section>
-<section id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<section id="required-dependencies">
+<h2>Required dependencies<a class="headerlink" href="#required-dependencies" title="Link to this heading"></a></h2>
 <p>RASCAL runs with <em>Python 3.10</em>.</p>
 <p>These are the dependencies of RASCAL:</p>
 <blockquote>
@@ -119,6 +105,30 @@ This can be configured through the <code class="docutils literal notranslate"><s
 <li><p><strong>scikit-learn</strong> 1.4.1.post1</p></li>
 <li><p><strong>seaborn</strong> 0.13.2</p></li>
 <li><p><strong>eofs</strong> 1.4.1</p></li>
+<li><p><strong>cfgrib</strong> 0.9.12.0</p></li>
+<li><p><strong>netCDF4</strong> 1.7.0</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="via-pypi">
+<h2>Via PyPi<a class="headerlink" href="#via-pypi" title="Link to this heading"></a></h2>
+<p>RASCAL can be installed via PyPi:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(rascal_env)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>rascal-ties
+</pre></div>
+</div>
+</section>
+<section id="via-github">
+<h2>Via GitHub<a class="headerlink" href="#via-github" title="Link to this heading"></a></h2>
+<p>RASCAL can be used via GitHub:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(rascal_env)</span> <span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/alvaro-gc95/RASCAL
+</pre></div>
+</div>
+<p>The GitHub repository also contains the following scripts:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">multiple_runs_example.py</span></code> to automatize running several configurations of similarity methods and pool sizes for various stations and variables.
+This can be configured through the <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RASCAL_evaluation.ipynb</span></code> a Jupyter Notebook to plot and validate the reconstructions</p></li>
 </ul>
 </div></blockquote>
 </section>

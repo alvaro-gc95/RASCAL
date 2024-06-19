@@ -1,33 +1,15 @@
 Installation
 ============
 
-Via PyPi
-------------
-
-RASCAL can be installed via PyPi:
+RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts wioth its required dependencies. 
 
 .. code-block:: console
 
-   (.venv) $ pip install rascal-ties
+   (base) $ conda create --name rascal_env
+   (base) $ conda activate rascal_env
    
-Via GitHub
-------------
-
-RASCAL can be used via GitHub:
-
-.. code-block:: console
-
-   (.venv) $ git clone https://github.com/alvaro-gc95/RASCAL
-   
-The GitHub repository also contains the following scripts:
-
-   - ``multiple_runs_example.py`` to automatize running several configurations of similarity methods and pool sizes for various stations and variables. 
-     This can be configured through the ``config.yaml`` file 
-   - ``RASCAL_evaluation.ipynb`` a Jupyter Notebook to plot and validate the reconstructions
-   
-   
-Dependencies
--------------
+Required dependencies
+------------------------
 
 RASCAL runs with *Python 3.10*.
 
@@ -42,5 +24,34 @@ These are the dependencies of RASCAL:
    - **scikit-learn** 1.4.1.post1
    - **seaborn** 0.13.2
    - **eofs** 1.4.1
+   - **cfgrib** 0.9.12.0
+   - **netCDF4** 1.7.0
+
+Via PyPi
+------------
+
+RASCAL can be installed via PyPi:
+
+.. code-block:: console
+
+   (rascal_env) $ pip install rascal-ties
+   
+Via GitHub
+------------
+
+RASCAL can be used via GitHub:
+
+.. code-block:: console
+
+   (rascal_env) $ git clone https://github.com/alvaro-gc95/RASCAL
+   
+The GitHub repository also contains the following scripts:
+
+   - ``multiple_runs_example.py`` to automatize running several configurations of similarity methods and pool sizes for various stations and variables. 
+     This can be configured through the ``config.yaml`` file 
+   - ``RASCAL_evaluation.ipynb`` a Jupyter Notebook to plot and validate the reconstructions
+   
+   
+
 
 

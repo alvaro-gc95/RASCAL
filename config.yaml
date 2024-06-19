@@ -6,15 +6,15 @@
 
 # Total period that spans the reanalysis data
 initial_year: 2005
-final_year: 2011
+final_year: 2013
 
-# Training period: Period to use to calculate the PCA.
+# Training period: Period to use to calculate the PCA and the seasonal mean for the anomalies.
 training_start: [2006, 1, 1]
-training_end: [2011, 12, 31]
+training_end: [2013, 12, 31]
 
-# Test period: Period to reconstruct.
-test_start: [2005, 1, 1]
-test_end: [2011, 12, 31]
+# Reconstruction period: Period to reconstruct.
+reconstruction_start: [2005, 1, 1]
+reconstruction_end: [2013, 12, 31]
 
 # Input paths
 reanalysis_path: "./data/reanalysis/REA02/"
@@ -33,6 +33,8 @@ stations:
 # Variables to reconstruct
 variables:
   - "TMEAN"
+  - "TMAX"
+  - "TMIN"
   # - "TMAX"
   # - "TMEAN"
   # - "WSPD"

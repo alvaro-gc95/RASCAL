@@ -208,17 +208,19 @@ class Predictor:
             training_dates = sorted(list(set(training) & set(pd.to_datetime(self.data["time"].values))))
             if len(training_dates) == len(self.data["time"].values):
                 testing_dates = False
-                print("! Training period is all the available period. All the training period will be reconstructed ",
+                print("! Training period is all the available period." +
+                      " All the training period will be used for the PCA ",
                       "(From " + str(training_dates[0]) + " to " + str(training_dates[-1]) + ")")
             else:
                 testing_dates = sorted(list(set(pd.to_datetime(self.data["time"].values)) - set(training_dates)))
-                print("! Training period: From " + str(training_dates[0]) + " to " + str(training_dates[-1]),
-                      ", Testing period: From " + str(testing_dates[0]) + " to " + str(testing_dates[-1]))
+                print("! Training PCA period: From " + str(training_dates[0]) + " to " + str(training_dates[-1]),
+                      ", Testing PCA period (Projection): From "
+                      + str(testing_dates[0]) + " to " + str(testing_dates[-1]))
         else:
             training_dates = self.data["time"].values
             testing_dates = False
             print("! No training period especified: "
-                  "Training period will be all the reanalysis period. All the training period will be reconstructed")
+                  "Training period will be all the reanalysis period. All the training period will be used for the PCA")
 
         training_anomalies, training_mean, training_std = get_seasonal_anomalies(
             self.data.sel(time=training_dates),
@@ -251,9 +253,11 @@ class Predictor:
                     projection_anomalies = projection_anomalies / projection_anomalies.std(dim='time')
                 anomalies_to_project.append(projection_anomalies)
             anomalies_to_project = xr.merge(anomalies_to_project)
-            print("! Add projection period to reconstruct: From " + str(anomalies_to_project["time"].values[0]) + " to "
+            print("! Project new dataset onto the calculated PCA: From "
+                  + str(anomalies_to_project["time"].values[0]) + " to "
                   + str(anomalies_to_project["time"].values[-1]))
 
+        print("Load data anomalies in memory ...")
         with ProgressBar():
             training_anomalies = training_anomalies.compute()
         if testing_dates:

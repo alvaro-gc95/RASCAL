@@ -5,7 +5,7 @@
 Version 1.0.0
 Contact: alvaro@intermet.es
 
-Multiple Runs Example
+Projection Example
 
 This is an example of how to use RASCAL. This script might be useful as a template to run multiple reconstructions with
 different parameters for various variables and stations. Some extra steps are added in order to save time when using it
@@ -63,11 +63,11 @@ training_dates = pd.date_range(
 )
 
 # Reconstruction period
-test_start = config.get('test_start')
-test_end = config.get('test_end')
-test_dates = pd.date_range(
-    start=datetime.datetime(test_start[0], test_start[1], test_start[2]),
-    end=datetime.datetime(test_end[0], test_end[1], test_end[2]),
+reconstruction_start = config.get('reconstruction_start')
+reconstruction_end = config.get('reconstruction_end')
+reconstruction_dates = pd.date_range(
+    start=datetime.datetime(reconstruction_start[0], reconstruction_start[1], reconstruction_start[2]),
+    end=datetime.datetime(reconstruction_end[0], reconstruction_end[1], reconstruction_end[2]),
     freq='1D'
 )
 
@@ -114,8 +114,8 @@ overwrite_pcs = config.get("overwrite_pcs")
 
 # Projection Years
 projection_data_path = config.get("reanalysis_path")
-projection_start = datetime.datetime(2012, 1, 1, 0, 0, 0)
-projection_end = datetime.datetime(2012, 12, 31, 0, 0, 0)
+projection_start = datetime.datetime(2014, 1, 1, 0, 0, 0)
+projection_end = datetime.datetime(2014, 12, 31, 0, 0, 0)
 projection_dates = pd.date_range(start=projection_start, end=projection_end, freq="1D")
 projection_years = sorted(set([str(d.year) for d in projection_dates]))
 
@@ -274,6 +274,9 @@ if __name__ == '__main__':
         # --------------------------------------------------------------------------------------------------------------
         # 4) Take an analog pool for each day to reconstruct, and select an analog for each similarity method ----------
         # --------------------------------------------------------------------------------------------------------------
+
+        reconstructions_dates = reconstruction_dates.append(pd.to_datetime(to_project.data["time"].values))
+
         # Create an output directory for the predictors and PC scaling used
         output_directory = (
             output_path + variable + "/" +
@@ -288,7 +291,7 @@ if __name__ == '__main__':
             # This method does not depend on the size of the pool
             if method == "closest":
 
-                analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=to_project.data["time"].values)
+                analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstructions_dates)
                 reconstruction = analogs.reconstruct(
                     pool_size=min(pool_sizes),
                     method=method,
@@ -306,7 +309,7 @@ if __name__ == '__main__':
             elif method == "average":
 
                 for sample_size in sample_sizes:
-                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=to_project.data["time"].values)
+                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstructions_dates)
                     reconstruction = analogs.reconstruct(
                         pool_size=min(pool_sizes),
                         method=method,
@@ -327,7 +330,7 @@ if __name__ == '__main__':
             elif method == "quantilemap":
 
                 for pool_size in pool_sizes:
-                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=to_project.data["time"].values)
+                    analogs = Analogs(pcs=predictor_pcs, observations=station_data, dates=reconstructions_dates)
                     reconstruction = analogs.reconstruct(
                         pool_size=pool_size,
                         method=method,

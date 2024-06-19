@@ -1,5 +1,5 @@
-Installation
-============
+Getting Started
+=================
 
 RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts wioth its required dependencies. 
 
@@ -27,8 +27,8 @@ These are the dependencies of RASCAL:
    - **cfgrib** 0.9.12.0
    - **netCDF4** 1.7.0
 
-Via PyPi
-------------
+Installation via PyPi
+-----------------------
 
 RASCAL can be installed via PyPi:
 
@@ -36,8 +36,8 @@ RASCAL can be installed via PyPi:
 
    (rascal_env) $ pip install rascal-ties
    
-Via GitHub
-------------
+Installation via GitHub
+-------------------------
 
 RASCAL can be used via GitHub:
 
@@ -49,6 +49,7 @@ The GitHub repository also contains the following scripts:
 
    - ``multiple_runs_example.py`` to automatize running several configurations of similarity methods and pool sizes for various stations and variables. 
      This can be configured through the ``config.yaml`` file 
+   - ``projection_example.py`` Mostly the same as ``multiple_runs_example.py``, but including a split in training and testing periods for the PCA, and an added year as a projection onto the training period PCs
    - ``RASCAL_evaluation.ipynb`` a Jupyter Notebook to plot and validate the reconstructions
    
    

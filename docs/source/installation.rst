@@ -28,7 +28,7 @@ These are the dependencies of RASCAL:
    - **netCDF4** 1.7.0
 
 Installation via PyPi
-------------
+-----------------------
 
 RASCAL can be installed via PyPi:
 
@@ -37,7 +37,7 @@ RASCAL can be installed via PyPi:
    (rascal_env) $ pip install rascal-ties
    
 Installation via GitHub
-------------
+-------------------------
 
 RASCAL can be used via GitHub:
 

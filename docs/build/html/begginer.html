@@ -86,9 +86,10 @@
 <h1>Begginer Tutorials<a class="headerlink" href="#begginer-tutorials" title="Link to this heading"></a></h1>
 <section id="prepare-your-data-folder-structure">
 <h2>Prepare your data: Folder Structure<a class="headerlink" href="#prepare-your-data-folder-structure" title="Link to this heading"></a></h2>
+<p><strong>1) Observational data</strong></p>
 <p>The observational data must follow this structure:</p>
 <div class="line-block">
-<div class="line">/observation_directory/</div>
+<div class="line">/station_observations_directory/</div>
 <div class="line">├── /variable/</div>
 <div class="line">│ ├── variable.csv</div>
 <div class="line">│ ├── meta.csv</div>
@@ -96,6 +97,11 @@
 <p>Where <code class="docutils literal notranslate"><span class="pre">variable</span></code> is the name of the variable to reconstruct (ex: TMEAN, PCP, WSPD …)
 and <code class="docutils literal notranslate"><span class="pre">meta.csv</span></code> is a .csv file that contains the columns [code, name, latitude, longitude, latitude]
 The data must be in daily or sub-daily resolution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>/station_observations_directory/</strong> should be the same word as in the <strong>code</strong> variable in <code class="docutils literal notranslate"><span class="pre">meta.csv</span></code>
+The <code class="docutils literal notranslate"><span class="pre">variable.csv</span></code> file should contain only the dates, and the data in a column named the same as the file.</p>
+</div>
 <p>An example of a variable file of mean temperature would be <code class="docutils literal notranslate"><span class="pre">TMEAN.csv</span></code> with the following format:</p>
 <table class="docutils align-default">
 <thead>
@@ -134,6 +140,14 @@ The data must be in daily or sub-daily resolution.</p>
 </tr>
 </tbody>
 </table>
+<p>Therefore, in this case the folder structure would be as follows:</p>
+<div class="line-block">
+<div class="line">/St03/</div>
+<div class="line">├── /TMEAN/</div>
+<div class="line">│ ├── TMEAN.csv</div>
+<div class="line">│ ├── meta.csv</div>
+</div>
+<p><strong>2) Reanalysis data</strong></p>
 <p>The reanalysis data must follow this structure:</p>
 <div class="line-block">
 <div class="line">/reanalysis_directory/</div>

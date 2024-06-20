@@ -4,10 +4,12 @@ Begginer Tutorials
 Prepare your data: Folder Structure
 -------------------------------------
 
+**1) Observational data**
+
 The observational data must follow this structure:
 
 
-| /observation_directory/
+| /station_observations_directory/
 | ├── /variable/
 | │ ├── variable.csv
 | │ ├── meta.csv
@@ -16,6 +18,11 @@ Where ``variable`` is the name of the variable to reconstruct (ex: TMEAN, PCP, W
 and ``meta.csv`` is a .csv file that contains the columns [code, name, latitude, longitude, latitude]
 The data must be in daily or sub-daily resolution.
 
+.. note::
+    **/station_observations_directory/** should be the same word as in the **code** variable in ``meta.csv``
+    The ``variable.csv`` file should contain only the dates, and the data in a column named the same as the file.
+   
+   
 An example of a variable file of mean temperature would be ``TMEAN.csv`` with the following format:
 
 +-------------+---------------+
@@ -36,6 +43,15 @@ An example of a ``meta.csv`` file would be:
 |    St03     |  Station 03   |   40.793056 |   -4.010556   |    1893     |
 +-------------+---------------+-------------+---------------+-------------+
 
+Therefore, in this case the folder structure would be as follows:
+
+| /St03/
+| ├── /TMEAN/
+| │ ├── TMEAN.csv
+| │ ├── meta.csv
+
+
+**2) Reanalysis data**
 
 The reanalysis data must follow this structure:
 

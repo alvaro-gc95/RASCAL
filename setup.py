@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import os
 
 DISTNAME = "rascal-ties"
-VERSION = "1.0.5"
+VERSION = "1.0.7"
 DESCRIPTION = "Open-source tool for climatological time series reconstruction and extension"
 PROJECT_URLS = {
     "Documentation": "https://rascalv100.readthedocs.io/en/latest/",
@@ -33,10 +33,10 @@ setup(
         "scikit-learn==1.4.1.post1",
         "seaborn==0.13.2",
         "eofs==1.4.1",
-        "matplotlib==3.5.5",
-        "sphinx-rtd-theme==1.2.2",
-        "sphinx==7.3.7",
-        "sphinx-copybutton==0.5.2",
+        "matplotlib>=3.5.5",
+        "sphinx-rtd-theme>=1.2.2",
+        "sphinx>=7.3.7",
+        "sphinx-copybutton>=0.5.2",
         "cfgrib==0.9.12.0",
         "netCDF4==1.7.0"
     ],

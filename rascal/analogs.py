@@ -785,7 +785,14 @@ def reconstruct_by_analogs(
             else:
                 # Convert the input predictor object to dataframe
                 secondary_predictor = kwargs["mapping_variable"]
-                secondary_predictor = secondary_predictor.data.to_dataframe().drop(["latitude", "longitude"], axis=1)
+                secondary_predictor = secondary_predictor.data
+                if isinstance(secondary_predictor, xr.Dataset):
+                    secondary_predictor = secondary_predictor.to_dataframe().drop(["latitude", "longitude"],
+                                                                                       axis=1)
+                elif isinstance(secondary_predictor, xr.DataArray):
+                    secondary_predictor = secondary_predictor.to_dataset(
+                        name="mapping_variable"
+                    ).to_dataframe().drop(["latitude", "longitude"], axis=1)
 
                 # Reanalysis data of the analog pool
                 reanalysis_pool = analog_dates.copy()

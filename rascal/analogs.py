@@ -793,7 +793,7 @@ def reconstruct_by_analogs(
 
                 secondary_predictor.index = pd.to_datetime(secondary_predictor.index)
 
-                # This line gives probles because when creating the secondary predictor, the dates of the year are not
+                # This line gives problems because when creating the secondary predictor, the dates of the year are not
                 # selected, the full year is taken, and this nos happens with the analog dates.index. I leave this
                 # here just in case this gives problems
                 # secondary_predictor.index = pd.to_datetime(analog_dates.index)

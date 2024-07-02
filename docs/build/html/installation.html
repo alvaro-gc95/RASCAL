@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; RASCAL 1.0.3 documentation</title>
+  <title>Getting Started &mdash; RASCAL 1.0.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -16,7 +16,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=baaebd52"></script>
+        <script src="_static/documentation_options.js?v=aec50437"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -24,7 +24,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Begginer Tutorials" href="begginer.html" />
+    <link rel="next" title="How does RASCAL work?" href="method.html" />
     <link rel="prev" title="Welcome to RASCAL’s documentation!" href="index.html" /> 
 </head>
 
@@ -54,6 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#installation-via-github">Installation via GitHub</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="method.html">How does RASCAL work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="begginer.html">Begginer Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Code Overview: Modules</a></li>
@@ -85,8 +86,8 @@
              
   <section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
-<p>RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts wioth its required dependencies.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>rascal_env
+<p>RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts with its required dependencies.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>rascal_env<span class="w"> </span><span class="nv">python</span><span class="o">==</span><span class="m">3</span>.10
 <span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>activate<span class="w"> </span>rascal_env
 </pre></div>
 </div>
@@ -96,17 +97,18 @@
 <p>These are the dependencies of RASCAL:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><strong>numpy</strong> 1.26.4</p></li>
-<li><p><strong>pandas</strong> 2.2.1</p></li>
-<li><p><strong>dask</strong> 2024.4.1</p></li>
-<li><p><strong>xarray</strong> 2024.3.0</p></li>
-<li><p><strong>scipy</strong> 1.13.0</p></li>
-<li><p><strong>tqdm</strong> 4.65.0</p></li>
-<li><p><strong>scikit-learn</strong> 1.4.1.post1</p></li>
-<li><p><strong>seaborn</strong> 0.13.2</p></li>
-<li><p><strong>eofs</strong> 1.4.1</p></li>
-<li><p><strong>cfgrib</strong> 0.9.12.0</p></li>
-<li><p><strong>netCDF4</strong> 1.7.0</p></li>
+<li><p><a class="reference external" href="https://numpy.org/devdocs/index.html">numpy</a> == 1.26.4</p></li>
+<li><p><a class="reference external" href="https://pandas.pydata.org/docs/index.html">pandas</a> == 2.2.1</p></li>
+<li><p><a class="reference external" href="https://docs.dask.org/en/stable/">dask</a> == 2024.4.1</p></li>
+<li><p><a class="reference external" href="https://docs.xarray.dev/en/stable/">xarray</a> == 2024.3.0</p></li>
+<li><p><a class="reference external" href="https://docs.scipy.org/doc/scipy/">scipy</a> == 1.13.0</p></li>
+<li><p><a class="reference external" href="https://tqdm.github.io/">tqdm</a> == 4.65.0</p></li>
+<li><p><a class="reference external" href="https://scikit-learn.org/stable/">scikit-learn</a> == 1.4.1.post1</p></li>
+<li><p><a class="reference external" href="https://seaborn.pydata.org/">seaborn</a> == 0.13.2</p></li>
+<li><p><a class="reference external" href="https://ajdawson.github.io/eofs/latest/">eofs</a> == 1.4.1</p></li>
+<li><p><a class="reference external" href="https://github.com/ecmwf/cfgrib/">cfgrib</a> == 0.9.12.0</p></li>
+<li><p><a class="reference external" href="https://unidata.github.io/netcdf4-python/">netCDF4</a> == 1.7.0</p></li>
+<li><p><a class="reference external" href="https://matplotlib.org/stable/index.html">matplotlib</a> &gt;= 3.5.5</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -140,7 +142,7 @@ This can be configured through the <code class="docutils literal notranslate"><s
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="Welcome to RASCAL’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="begginer.html" class="btn btn-neutral float-right" title="Begginer Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="method.html" class="btn btn-neutral float-right" title="How does RASCAL work?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

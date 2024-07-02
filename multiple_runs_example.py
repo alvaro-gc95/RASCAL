@@ -27,7 +27,7 @@ import pandas as pd
 from rascal.analogs import Station, Predictor, Analogs
 
 # Open configuration
-config = rascal.utils.open_yaml('config.yaml')
+config = rascal.utils.open_yaml('config_rmpnsg.yaml')
 
 """
 ------------------------------------------------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ if __name__ == '__main__':
                 nwp_path=reanalysis_path,
                 variables=predictor_variables,
                 dates=years,
-                file_format=".nc")
+                file_format=".grib")
 
             # Generate Predictor
             predictors = Predictor(
@@ -195,7 +195,7 @@ if __name__ == '__main__':
                 nwp_path=reanalysis_path,
                 variables=mapping_variables,
                 dates=years,
-                file_format=".nc")
+                file_format=".grib")
 
             # Generate Predictor
             mapping_variable = Predictor(

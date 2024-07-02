@@ -27,6 +27,7 @@ Contents
 .. toctree::
 
    installation
+   method
    begginer
    advanced
    code

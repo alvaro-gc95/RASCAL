@@ -9,14 +9,14 @@
 project = 'RASCAL'
 copyright = '2024, Alvaro Gonzalez-Cervera'
 author = 'Alvaro Gonzalez-Cervera'
-release = '1.0.3'
+release = '1.0.8'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     'sphinx_rtd_theme',
-    'sphinx_copybutton',
+    'sphinx_copybutton'
 ]
 
 templates_path = ['_templates']

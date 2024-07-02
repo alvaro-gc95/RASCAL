@@ -1,11 +1,11 @@
 Getting Started
 =================
 
-RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts wioth its required dependencies. 
+RASCAL is available to download in PyPi and GitHub. To install RASCAL, it is recommended to create a new environment to avoid possible conflicts with its required dependencies. 
 
 .. code-block:: console
 
-   (base) $ conda create --name rascal_env
+   (base) $ conda create --name rascal_env python==3.10
    (base) $ conda activate rascal_env
    
 Required dependencies
@@ -15,17 +15,18 @@ RASCAL runs with *Python 3.10*.
 
 These are the dependencies of RASCAL:
 
-   - **numpy** 1.26.4
-   - **pandas** 2.2.1
-   - **dask** 2024.4.1
-   - **xarray** 2024.3.0
-   - **scipy** 1.13.0
-   - **tqdm** 4.65.0
-   - **scikit-learn** 1.4.1.post1
-   - **seaborn** 0.13.2
-   - **eofs** 1.4.1
-   - **cfgrib** 0.9.12.0
-   - **netCDF4** 1.7.0
+   - `numpy <https://numpy.org/devdocs/index.html>`_ == 1.26.4
+   - `pandas <https://pandas.pydata.org/docs/index.html>`_ == 2.2.1
+   - `dask <https://docs.dask.org/en/stable/>`_ == 2024.4.1
+   - `xarray <https://docs.xarray.dev/en/stable/>`_ == 2024.3.0
+   - `scipy <https://docs.scipy.org/doc/scipy/>`_ == 1.13.0
+   - `tqdm <https://tqdm.github.io/>`_ == 4.65.0
+   - `scikit-learn <https://scikit-learn.org/stable/>`_ == 1.4.1.post1
+   - `seaborn <https://seaborn.pydata.org/>`_ == 0.13.2
+   - `eofs <https://ajdawson.github.io/eofs/latest/>`_ == 1.4.1
+   - `cfgrib <https://github.com/ecmwf/cfgrib/>`_ == 0.9.12.0
+   - `netCDF4 <https://unidata.github.io/netcdf4-python/>`_ == 1.7.0
+   - `matplotlib <https://matplotlib.org/stable/index.html>`_ >= 3.5.5
 
 Installation via PyPi
 -----------------------

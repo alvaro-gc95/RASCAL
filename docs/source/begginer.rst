@@ -1,4 +1,4 @@
-Begginer Tutorials
+Tutorials
 ===================
 
 In this section we will provide some tutorials with which you can make your first reconstruction. The `GitHub repository <https://github.com/alvaro-gc95/RASCAL>`_ contains some example data to practice with.
@@ -220,7 +220,9 @@ If you want to use more than one meteorological variable, or the predictor varia
           dates=reconstruction_dates
       )
 
-
+.. image:: 
+  ../images/pc_space.png
+  
 **5) Reconstruct or extend missing observational data**
 
    After calculating the distances of all the days to each day to reconstruct, a pool of the N closest days in the PCs space is selected, setting ``pool_size = N`` in the ``Analogs.reconstruct()`` class method, where **N <= days in PCs**. To select the best analog, you can choose between three different similarity methods: ``closest``, ``average``, or ``quantilemap``.
@@ -234,6 +236,9 @@ If you want to use more than one meteorological variable, or the predictor varia
           method='closest'
           )
           
+   .. image:: 
+      ../images/closest.png
+      
    The **average** method takes the *M* days with the smaller distance in the pool, and averages them, weighting them by the inverse of the square root of the distance:
    
    .. code-block:: python
@@ -244,7 +249,10 @@ If you want to use more than one meteorological variable, or the predictor varia
           method='average',
           sample_size=m
           )
-
+          
+   .. image:: 
+      ../images/average.png
+      
    The **quantilemap** method requires of another *mapping variable*, a variable highly correlated to the predictand variable, and calculates its quantile in its distribution in the analog pool,
    then it chooses the day which its historical data occupies the same quantile in the pool distribution as the mapping variable. In this case we used the 2m temperature of the reanalysis ("SURF_T").
 
@@ -275,8 +283,39 @@ If you want to use more than one meteorological variable, or the predictor varia
           method='quantilemap',
           mapping_variable=mapping_variable
        )
-       
+          
+   .. image:: 
+      ../images/quantiles.png
+      
 .. note::
     The mapping variable can be the same variable as the predictand but from the reanalysis. This method allows to remove the bias of the reanalysis and to consider local phenomena seen in the observations that the reanalysis cannot resolve.
         
     Other variables can be used as long as they are highly correlated, and sometimes it can give better results than using the same variable as the predictand, if that variable is badly resolved in the reanalysis.
+    
+    
+Validate your reconstructions
+--------------------------------
+
+When looking for analog days, it is possible that the days with the most similar large-scale patterns are day few days before or after the date to reconstruct, due to atmospheric persistence effects. To see how well the method perform without the influence of persistence effects, while also creating a *testing-training* period split, is to use validation windows.
+For each day to be reconstructed, you can omit from the pool the N days before and/or after it. This way, you do not consider these days in the reconstruction, while reconstructing a day with a dataset "independent" of the period to be reconstructed.
+This is implemented in ``Analogs.reconstruct()`` using the ``vw_size`` and ``vw_type`` arguments. Where ``vw_size`` determines the total number of days to discard around the day to be reconstructed, and ``vw_type`` determines the type of gap, omitting the days before if ``vw_type = 'forward'``, the days after if ``vw_type = 'backward'``, and the half days before and half days after if ``vw_type = 'centered'``.
+For example, the last part of the last code snippet can be validated using a centered window of 30 days using:
+
+   .. code-block:: python
+
+      reconstruction = analogs.reconstruct(
+          pool_size=30,
+          method='quantilemap',
+          mapping_variable=mapping_variable,
+          vw_size=30,
+          vw_type='centered'
+       )
+          
+
+
+
+
+
+
+
+

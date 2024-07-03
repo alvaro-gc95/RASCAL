@@ -5,20 +5,20 @@
 ########################################################################################################################
 
 # Total period that spans the reanalysis data
-initial_year: 2005
-final_year: 2013
+initial_year: 1900
+final_year: 2010
 
 # Training period: Period to use to calculate the PCA and the seasonal mean for the anomalies.
-training_start: [2006, 1, 1]
-training_end: [2013, 12, 31]
+training_start: [1900, 1, 1]
+training_end: [2010, 12, 31]
 
 # Reconstruction period: Period to reconstruct.
-reconstruction_start: [2005, 1, 1]
-reconstruction_end: [2013, 12, 31]
+reconstruction_start: [1900, 1, 1]
+reconstruction_end: [2010, 12, 31]
 
 # Input paths
-reanalysis_path: "./data/reanalysis/REA02/"
-observations_path: "./data/observations/"
+reanalysis_path: "/mnt/2d9c9988-41df-4d5a-95a1-9711f297e69a/data/reanalysis/era20c_rascal/"
+observations_path: "/mnt/2d9c9988-41df-4d5a-95a1-9711f297e69a/data/observations/aemet/"
 
 # Output paths
 pca_path: './pca/'
@@ -28,11 +28,14 @@ plot_path: "./plots/"
 
 # Stations
 stations:
-  - "St03"
+  - "navacerrada"
+  - "segovia"
+  - "colmenar"
+  - "retiro"
 
 # Variables to reconstruct
 variables:
-  - "TMEAN"
+  - "PCP"
   - "TMAX"
   - "TMIN"
   # - "TMAX"
@@ -41,16 +44,16 @@ variables:
   # - "PCP"
 
 # Synoptic predictor
-#predictor_lat_min: 33.1
-#predictor_lat_max: 43.9
-#predictor_lon_min: 17.6
-#predictor_lon_max: 28.3
-predictor_lat_min: 30
-predictor_lat_max: 50
-predictor_lon_min: -30
-predictor_lon_max: 5
+predictor_lat_min: 33.1
+predictor_lat_max: 43.9
+predictor_lon_min: 17.6
+predictor_lon_max: 28.3
+# predictor_lat_min: 30
+# predictor_lat_max: 50
+# predictor_lon_min: -30
+# predictor_lon_max: 5
 
-predictor_grouping: "00hour_1D_mean"
+predictor_grouping: "12hour_1D_mean"
 
 grouping_per_variable:
   TMEAN: "1D_mean"
@@ -59,18 +62,18 @@ grouping_per_variable:
   PCP: "1D_sum"
 
 predictor_for_variable:
-  TMEAN: [ '925_Z' ]
-  TMAX: [ '925_Z' ]
-  TMIN: [ '925_Z' ]
+  TMEAN: [ '925_129' ]
+  TMAX: [ '925_129' ]
+  TMIN: [ '925_129' ]
   PCP: [ 'SURF_71.162', 'SURF_72.162' ]
 
 overwrite_predictor: True
 
 # Quantile Mapping Variable
 mapping_variables_for_variable:
-  TMEAN: [ 'SURF_T']
-  TMAX: [ 'SURF_T']
-  TMIN: [ 'SURF_T']
+  TMEAN: [ 'SURF_167']
+  TMAX: [ 'SURF_167']
+  TMIN: [ 'SURF_167']
   PCP: [ 'SURF_71.162', 'SURF_72.162' ] 
 
 
@@ -98,7 +101,7 @@ analog_pool_size: [20, 50, 100]
 weighted_mean_sample_size: [2, 5, 10]
 distance: 'euclidean'
 
-validation_window_size: 0
+validation_window_size: 60
 validation_window_type: 'centered'
 
 similarity_methods:

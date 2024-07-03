@@ -15,6 +15,9 @@ fields: the predictor variable extracted from GCM products, and the predictand v
 missing data points.
 
 
+.. image:: 
+  ../images/analog.png
+
 .. _PCA:
 
 Principal Component Analysis
@@ -28,4 +31,5 @@ set of coefficients, called principal components (PCs), are required to represen
 
 You can read in `(González-Cervera & Durán, 2024) <https://doi.org/10.5194/egusphere-2024-958>`_ more details about the methodology and performance of the model.
 
-
+.. image:: 
+  ../images/flux_diagram.png

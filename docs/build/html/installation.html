@@ -55,8 +55,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="method.html">How does RASCAL work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="begginer.html">Begginer Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="begginer.html">Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Code Overview: Modules</a></li>
 </ul>
 
@@ -111,6 +110,15 @@
 <li><p><a class="reference external" href="https://matplotlib.org/stable/index.html">matplotlib</a> &gt;= 3.5.5</p></li>
 </ul>
 </div></blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Some computers have problems with the <strong>cfgrib</strong> library and its <strong>eccodes</strong> dependencies, despite install them, sometimes it raises: <strong>“RuntimeError: Cannot find the ecCodes library”</strong>.
+To sove this, install the library ecmwflibs in your virtual environment.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(base)</span> <span class="gp">$ </span>conda<span class="w"> </span>activate<span class="w"> </span>rascal_env
+<span class="gp gp-VirtualEnv">(rascal_env)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>ecmwflibs
+</pre></div>
+</div>
+</div>
 </section>
 <section id="installation-via-pypi">
 <h2>Installation via PyPi<a class="headerlink" href="#installation-via-pypi" title="Link to this heading"></a></h2>

@@ -27,6 +27,17 @@ These are the dependencies of RASCAL:
    - `cfgrib <https://github.com/ecmwf/cfgrib/>`_ == 0.9.12.0
    - `netCDF4 <https://unidata.github.io/netcdf4-python/>`_ == 1.7.0
    - `matplotlib <https://matplotlib.org/stable/index.html>`_ >= 3.5.5
+   
+.. warning::
+    
+    Some computers have problems with the **cfgrib** library and its **eccodes** dependencies, despite install them, sometimes it raises: **"RuntimeError: Cannot find the ecCodes library"**.
+    To sove this, install the library ecmwflibs in your virtual environment.
+    
+    .. code-block:: console
+
+       (base) $ conda activate rascal_env
+       (rascal_env) $ pip install ecmwflibs
+
 
 Installation via PyPi
 -----------------------

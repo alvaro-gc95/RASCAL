@@ -29,6 +29,5 @@ Contents
    installation
    method
    begginer
-   advanced
    code
    

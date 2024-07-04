@@ -1,0 +1,8 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+- names: Álvaro González-Cervera
+orcid: https://orcid.org/0000-0002-3204-090X
+title:alvaro-gc95/RASCAL: RASCALv1.0.9
+version: v1.0.9
+date-released: 2024-07-04

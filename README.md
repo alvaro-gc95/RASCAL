@@ -44,6 +44,8 @@ python3 -m pip install rascal-ties
 
 RASCAL is a library based in four main clases: Station, Predictor, Analogs and Rskill, and an additional class CIndex, that allows to calculate relevant climatic indices
 
+You can find datasets to practice in [Zenodo](https://zenodo.org/records/12626857)
+
 To run RASCAl as a python library, you can refer to the tutorial in the documentation: [Make your first reconstruction](https://rascalv100.readthedocs.io/en/latest/begginer.html).
 
 This repository contains a the script **multiple_runs_example.py**, where all the neccesary steps to make reconstructions are already programmed, allowing to make lots of different reconstructions for different stations, variables, analog pool sizes, and similarity methods, only modifying the configuration file **config.yaml** and running:

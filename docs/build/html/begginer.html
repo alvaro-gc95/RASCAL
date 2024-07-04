@@ -52,7 +52,7 @@
 <li class="toctree-l1"><a class="reference internal" href="method.html">How does RASCAL work?</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#prepare-your-data-folder-structure">Prepare your data: Folder Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#make-a-your-first-reconstruction">Make a your first reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#make-your-first-reconstruction">Make your first reconstruction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#validate-your-reconstructions">Validate your reconstructions</a></li>
 </ul>
 </li>
@@ -164,8 +164,8 @@ The <code class="docutils literal notranslate"><span class="pre">variable.csv</s
 The reanalysis data can be in netCDF or GRIB format
 The data must be in daily or sub-daily resolution</p>
 </section>
-<section id="make-a-your-first-reconstruction">
-<h2>Make a your first reconstruction<a class="headerlink" href="#make-a-your-first-reconstruction" title="Link to this heading"></a></h2>
+<section id="make-your-first-reconstruction">
+<h2>Make your first reconstruction<a class="headerlink" href="#make-your-first-reconstruction" title="Link to this heading"></a></h2>
 <p>RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill. After <a class="reference external" href="https://rascalv100.readthedocs.io/en/latest/installation.html#installation-via-pypi">installing the library</a>, it can be imported as:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">rascal</span>
 </pre></div>
@@ -181,9 +181,9 @@ The data must be in daily or sub-daily resolution</p>
 </div></blockquote>
 <p><strong>2) Load and process predictor fields from large-scale models</strong></p>
 <blockquote>
-<div><div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>If you are using the <a class="reference external" href="https://github.com/alvaro-gc95/RASCAL/tree/master/data">GitHub data</a>, the reanalysis directory is empty due to file size limitations. You can find the reanalysis data in <a class="reference external" href="https://zenodo.org/records/10592595">Zenodo</a> or you can use an already processed <strong>Predictor</strong> saved in <code class="docutils literal notranslate"><span class="pre">./tmp/</span></code> in <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickle</a> format, using the same parameters as in the code snippets of the tutorial. You can open it using this code:</p>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are using the <a class="reference external" href="https://github.com/alvaro-gc95/RASCAL/tree/master/data">GitHub data</a>, the reanalysis directory is empty due to file size limitations, you can find the reanalisys data in <a class="reference external" href="https://zenodo.org/records/12626857">https://zenodo.org/records/12626857</a>. Alternatively, you can find the reanalysis data in <a class="reference external" href="https://zenodo.org/records/10592595">Zenodo</a> or you can use an already processed <strong>Predictor</strong> saved in <code class="docutils literal notranslate"><span class="pre">./tmp/</span></code> in <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickle</a> format, using the same parameters as in the code snippets of the tutorial. You can open it using this code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
 
 <span class="n">predictor_filename</span> <span class="o">=</span> <span class="s2">&quot;./tmp/925_Z-00hour_1D_mean-predictor.pkl&quot;</span>

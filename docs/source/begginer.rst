@@ -97,8 +97,8 @@ RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill. Aft
 **2) Load and process predictor fields from large-scale models**
 
 
-   .. warning::
-       If you are using the `GitHub data <https://github.com/alvaro-gc95/RASCAL/tree/master/data>`_, the reanalysis directory is empty due to file size limitations. You can find the reanalysis data in `Zenodo <https://zenodo.org/records/10592595>`_ or you can use an already processed **Predictor** saved in ``./tmp/`` in `pickle <https://docs.python.org/3/library/pickle.html>`_ format, using the same parameters as in the code snippets of the tutorial. You can open it using this code:
+   .. note::
+       If you are using the `GitHub data <https://github.com/alvaro-gc95/RASCAL/tree/master/data>`_, the reanalysis directory is empty due to file size limitations, you can find the reanalisys data in `<https://zenodo.org/records/12626857>`_. Alternatively, you can find the reanalysis data in `Zenodo <https://zenodo.org/records/10592595>`_ or you can use an already processed **Predictor** saved in ``./tmp/`` in `pickle <https://docs.python.org/3/library/pickle.html>`_ format, using the same parameters as in the code snippets of the tutorial. You can open it using this code:
 
        .. code-block:: python 
     

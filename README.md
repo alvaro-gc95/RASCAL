@@ -57,6 +57,6 @@ To validate and plot the results, and compare its skill to the observations and 
 ## References
 - Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
 
-- Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.9 (v1.0.9). Zenodo. https://doi.org/10.5281/zenodo.10592595
+- Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.9 (v1.0.9). Zenodo. https://doi.org/10.5281/zenodo.12654140
 
 

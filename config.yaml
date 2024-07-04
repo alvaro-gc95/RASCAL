@@ -17,7 +17,7 @@ reconstruction_start: [2005, 1, 1]
 reconstruction_end: [2013, 12, 31]
 
 # Input paths
-reanalysis_path: "./data/reanalysis/REA02/"
+reanalysis_path: "./data/reanalysis/ERA5/"
 observations_path: "./data/observations/"
 
 # Output paths
@@ -35,16 +35,8 @@ variables:
   - "TMEAN"
   - "TMAX"
   - "TMIN"
-  # - "TMAX"
-  # - "TMEAN"
-  # - "WSPD"
-  # - "PCP"
 
 # Synoptic predictor
-#predictor_lat_min: 33.1
-#predictor_lat_max: 43.9
-#predictor_lon_min: 17.6
-#predictor_lon_max: 28.3
 predictor_lat_min: 30
 predictor_lat_max: 50
 predictor_lon_min: -30

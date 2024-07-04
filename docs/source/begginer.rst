@@ -73,7 +73,7 @@ The reanalysis data can be in netCDF or GRIB format
 The data must be in daily or sub-daily resolution
 
 
-Make a your first reconstruction
+Make your first reconstruction
 ------------------------------------
 
 RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill. After `installing the library <https://rascalv100.readthedocs.io/en/latest/installation.html#installation-via-pypi>`_, it can be imported as:

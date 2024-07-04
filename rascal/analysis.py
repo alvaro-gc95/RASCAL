@@ -625,7 +625,7 @@ def get_reanalysis_in_gridpoint(
         path: str,
         initial_year: int,
         final_year: int,
-        variable: str,
+        variable: list,
         grouping: str,
         grid_point: dict,
         file_format=".grib",
@@ -669,9 +669,9 @@ def get_reanalysis_in_gridpoint(
 
     # Change variable name to RASCAL common acronym
     if ensemble_member is None:
-        reanalysis_data.columns = [variable]
+        reanalysis_data.columns = variable
     else:
-        reanalysis_data.columns = [variable + "_" + str(ensemble_member)]
+        reanalysis_data.columns = [v + "_" + str(ensemble_member) for v in variable]
 
     if isinstance(reanalysis_data.columns, pd.MultiIndex):
         reanalysis_data.columns = ['_'.join(x) for x in reanalysis_data.columns]

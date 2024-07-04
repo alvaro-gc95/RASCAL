@@ -27,91 +27,35 @@ RASCAL is based in python 3.10. To run RASCAL, these other python libraries are 
 
 ## Documentation
 
-For a more detalied documentation you can check [RASCAL ReadTheDocs](https://rascalv100.readthedocs.io). 
+For a more detalied documentation and tutorials check [RASCAL ReadTheDocs](https://rascalv100.readthedocs.io). 
 
 ## Getting Started
 
-RASCAL can be installed through PyPi
+RASCAL can be installed through PyPi. It is recommemded to create a virtual environment first.
 
 ```
-pip install rascal-ties
+conda create --name rascal_env python==3.10
+conda activate rascal_env
+python3 -m pip install rascal-ties
 ```
-or using the files in _rascal/_ directory inside this repository
-
 
 ## How to use
 
-RASCAL is based in four main clases: Station, Predictor, Analogs and Rskill
+RASCAL is a library based in four main clases: Station, Predictor, Analogs and Rskill, and an additional class CIndex, that allows to calculate relevant climatic indices
+
+To run RASCAl as a python library, you can refer to the tutorial in the documentation: [Make your first reconstruction](https://rascalv100.readthedocs.io/en/latest/begginer.html).
+
+This repository contains a the script **multiple_runs_example.py**, where all the neccesary steps to make reconstructions are already programmed, allowing to make lots of different reconstructions for different stations, variables, analog pool sizes, and similarity methods, only modifying the configuration file **config.yaml** and running:
 
 ```python
-import rascal
+python3 multiple_runs_example.py
 ```
 
-### 1) Get observational data
-To load the observational data (in daily or sub-daily resolution) and the station metadata, the data is loaded from a CSV file with the same name as the desired variable, and a meta.csv file containing the name, code, altitude, longitude and latitude of the station
-
-```python
-station = rascal.analogs.Station(path='./data/observations/station/')
-station_data = station.get_data(variable='PCP')
-```
-
-### 2) Load and process predictor fields from large-scale models
-To load the reanalysis or large-scale model data we use the Predictor class. This example shows how to use the Total Column of Water Vapor Flux from the ERA20C reanalysis. In this reanalysis the components U and V of the TCWVF are named '71.162' and '72.162'. The predictor is set or the years 1900-1910, for each day only the 12:00 is selected through the _grouping_ argument, the domain is 80ºN-20ºN, 60ºW-20ºE. The _mosaic_ argument set to ___True___ concatenates both components U and V in the longitude axis to obtain a single compound variable of size _(time x 2*longitude x latitude)_:
-
-```python
-# Get file paths
-predictor_files = rascal.utils.get_files(
-    nwp_path='./data/reanalysis/era20c/',
-    variables=['71.162', '72.162'],
-    dates=[1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910],
-    file_format=".grib"
-)
-
-# Generate Predictor
-predictors = rascal.analogs.Predictor(
-    paths=predictor_files,
-    grouping='12h_1D_mean',
-    lat_min=20,
-    lat_max=80,
-    lon_min=-60,
-    lon_max=20,
-    mosaic=True
-)
-
-```
-### 3) Perform Principal Component Analysis on the predictor fields
-The Principal Component Analysis (PCA) of the compund variable standardized anomalies, with 4 principal components and for the conventionan seasons DJF, MAM, JJA, and SON,  is conducted as follows:
-```python
-predictor_pcs = predictors.pcs(
-    npcs=n_components,
-    seasons=[[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]],
-    standardize=True,
-    path="./tmp/"
-)
-```
-
-### 4) Look at the PC space to find analog days in the historical data
-After performing the PCA, the obtained values of the principal componets act as the predictor used to perform the reconstructions. First the analog days, in order of euclidean distance, are found.
-
-```python
-analogs = rascal.analogs.Analogs(pcs=predictor_pcs, observations=station_data, dates=test_dates)
-```
-
-### 5) Reconstruct or extend missing observational data 
-Later, the reconstuctions are made using one of the following similarity methods: _closest_, _average_, or _quantilemap_.
-
-```python
-reconstruction = analogs.reconstruct(
-    pool_size=30,
-    method='closest',
-)
-```
-### 6) Evaluate the reconstructions based on your scientific goals
-The evaluation of the reconstructions is made with the RSkill class. The Jupyter Notebook _'RASCAL_evaluation'_ contains examples of applications
+To validate and plot the results, and compare its skill to the observations and reference reanalysis, you can use the Jupyter Notebook *RASCAL_evaluation.ipynb*
 
 ## References
-- Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
+- Pending of publication. González-Cervera, A., Durán, L. (2024), RASCAL v1.0: An Open Source Tool for Climatological Time Series Reconstruction and Extension. https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/
 
-- Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.0 (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.10592595
+- Zenodo: Gonzalez-Cervera. (2024). alvaro-gc95/RASCAL: RASCALv1.0.9 (v1.0.9). Zenodo. https://doi.org/10.5281/zenodo.10592595
 
 

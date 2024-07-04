@@ -714,7 +714,6 @@ def get_reanalysis_ensemble(df: pd.DataFrame, variable_to_validate, freq, groupi
         resampled_df = pd.concat([resampled_df, ensemble_mean], axis=1)
 
     else:
-        print(df.columns)
         if grouping == "mean":
             resampled_df = df.resample(freq).mean()
         elif grouping == 'sum' or grouping == 'hydrosum' and freq != "1Y":

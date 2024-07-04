@@ -3,7 +3,7 @@
 [![docs](https://readthedocs.org/projects/rascalv100/badge/)](https://rascalv100.readthedocs.io)
 [![PyPi](https://img.shields.io/badge/PyPi-install-blue)](https://pypi.org/project/rascal-ties/)
 [![GMD](https://img.shields.io/badge/GMD-preprint-orange)](https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/)
-[![DOI](https://sandbox.zenodo.org/badge/580329030.svg)](https://sandbox.zenodo.org/doi/10.5072/zenodo.79848)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12654140.svg)](https://doi.org/10.5281/zenodo.12654140)
 
 
 RASCAL is a python library desinged to reconstruct time series of climatological data, based on the Analog Method (AM), to use them for climate studies. The AM is a statistical downscalling method, based on the assumption that large-scale atmospheric conditions tend to produce similar local weather patterns, and therefore is possible to predict local conditions finding analog days, with similar large-scale patterns, in the historical record. 

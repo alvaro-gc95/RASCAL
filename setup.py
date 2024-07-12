@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import os
 
 DISTNAME = "rascal-ties"
-VERSION = "1.0.7"
+VERSION = "1.0.10"
 DESCRIPTION = "Open-source tool for climatological time series reconstruction and extension"
 PROJECT_URLS = {
     "Documentation": "https://rascalv100.readthedocs.io/en/latest/",

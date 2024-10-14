@@ -2,7 +2,7 @@
 
 [![docs](https://readthedocs.org/projects/rascalv100/badge/)](https://rascalv100.readthedocs.io)
 [![PyPi](https://img.shields.io/badge/PyPi-install-blue)](https://pypi.org/project/rascal-ties/)
-[![GMD](https://img.shields.io/badge/GMD-preprint-orange)](https://egusphere.copernicus.org/preprints/2024/egusphere-2024-958/)
+[![GMD](https://img.shields.io/badge/GMD-paper-orange)](https://doi.org/10.5194/gmd-17-7245-2024)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12654140.svg)](https://doi.org/10.5281/zenodo.12654140)
 
 

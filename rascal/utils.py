@@ -412,6 +412,12 @@ def open_data(files_paths: dict, grouping: str = None, number: int = None, domai
         variable_ds = variable_ds.astype(np.float32)
         # Clean unidimensional coordinates to avoid merging problems
         variable_ds = clean_coordinates(variable_ds)
+        # Check if the 'time' dimension exists in the dataset
+        if "time" not in variable_ds.coords:
+          # If 'time' doesn't exist, check for 'valid_time'
+          if "valid_time" in variable_ds.coords:
+            # Rename 'valid_time' to 'time' to ensure consistency
+            variable_ds = variable_ds.rename({'valid_time': 'time'})
         # Group the data
         variable_ds = group_data(variable_ds, grouping)
         # Select domain
